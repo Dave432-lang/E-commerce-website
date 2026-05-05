@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShoppingBag, MessageCircle, Globe, Mail, ArrowRight } from 'lucide-react';
+import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { FaInstagram, FaTwitter, FaFacebook } from 'react-icons/fa';
 
 const Footer = () => {
   return (
@@ -16,9 +17,9 @@ const Footer = () => {
               Elevating everyday aesthetics. Premium quality clothing designed for the modern individual.
             </p>
             <div className="social-links">
-              <a href="#" className="social-icon"><Globe size={20} /></a>
-              <a href="#" className="social-icon"><MessageCircle size={20} /></a>
-              <a href="#" className="social-icon"><Mail size={20} /></a>
+              <a href="#" className="social-icon"><FaInstagram size={20} /></a>
+              <a href="#" className="social-icon"><FaTwitter size={20} /></a>
+              <a href="#" className="social-icon"><FaFacebook size={20} /></a>
             </div>
           </div>
 
