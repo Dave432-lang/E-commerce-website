@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingBag, Heart, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ProductGrid = ({ title, products }) => {
   return (
@@ -11,14 +12,14 @@ const ProductGrid = ({ title, products }) => {
       
       <div className="product-grid">
         {products.map((product) => (
-          <div key={product.id} className="product-card">
+          <Link to={`/product/${product.id}`} key={product.id} className="product-card" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="product-image-container">
               <img src={product.image} alt={product.name} className="product-image" />
-              <button className="wishlist-btn">
+              <button className="wishlist-btn" onClick={(e) => { e.preventDefault(); /* handle wishlist */ }}>
                 <Heart size={20} />
               </button>
               <div className="product-overlay">
-                <button className="add-to-cart-btn">
+                <button className="add-to-cart-btn" onClick={(e) => { e.preventDefault(); /* handle cart */ }}>
                   <ShoppingBag size={18} /> Add to Cart
                 </button>
               </div>
@@ -33,7 +34,7 @@ const ProductGrid = ({ title, products }) => {
               <h3 className="product-name">{product.name}</h3>
               <p className="product-price">${product.price.toFixed(2)}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

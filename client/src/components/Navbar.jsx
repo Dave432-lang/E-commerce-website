@@ -1,22 +1,23 @@
 import React from 'react';
 import { ShoppingBag, Search, User, Menu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const Navbar = () => {
+const Navbar = ({ onOpenCart }) => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {/* Logo */}
-        <div className="navbar-logo">
+        <Link to="/" className="navbar-logo" style={{ textDecoration: 'none' }}>
           <ShoppingBag className="icon-primary" size={28} />
           <span className="logo-text">Boutique</span>
-        </div>
+        </Link>
 
         {/* Navigation Links - Hidden on Mobile */}
         <div className="navbar-links">
-          <a href="#" className="nav-link">Home</a>
-          <a href="#" className="nav-link">Shop</a>
-          <a href="#" className="nav-link">Collections</a>
-          <a href="#" className="nav-link">About</a>
+          <Link to="/" className="nav-link">Home</Link>
+          <a href="#shop" className="nav-link">Shop</a>
+          <a href="#collections" className="nav-link">Collections</a>
+          <a href="#about" className="nav-link">About</a>
         </div>
 
         {/* Icons */}
@@ -27,7 +28,7 @@ const Navbar = () => {
           <button className="icon-btn">
             <User size={22} />
           </button>
-          <button className="icon-btn cart-btn">
+          <button className="icon-btn cart-btn" onClick={onOpenCart}>
             <ShoppingBag size={22} />
             <span className="cart-badge">0</span>
           </button>
