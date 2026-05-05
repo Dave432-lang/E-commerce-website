@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Heart } from 'lucide-react';
+import { ShoppingBag, Heart, Star } from 'lucide-react';
 
 const ProductGrid = ({ title, products }) => {
   return (
@@ -24,7 +24,12 @@ const ProductGrid = ({ title, products }) => {
               </div>
             </div>
             <div className="product-info">
-              <p className="product-category">{product.category}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <p className="product-category" style={{ marginBottom: 0 }}>{product.category}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24', fontSize: '0.85rem', fontWeight: 600 }}>
+                  <Star size={14} fill="currentColor" /> {product.rating}
+                </div>
+              </div>
               <h3 className="product-name">{product.name}</h3>
               <p className="product-price">${product.price.toFixed(2)}</p>
             </div>

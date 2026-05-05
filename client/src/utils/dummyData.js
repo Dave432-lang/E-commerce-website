@@ -18,6 +18,7 @@ const generateProducts = (startIndex) => {
     id: startIndex + i,
     name: `${adjectives[(startIndex + i) % 8]} ${nouns[(startIndex + i + 2) % 8]}`,
     price: Math.floor(Math.random() * (300 - 40 + 1) + 40) + 0.99,
+    rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1),
     category: categories[(startIndex + i) % 8],
     image: fashionImages[(startIndex + i) % 8],
   }));
