@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Instagram, Twitter, Facebook, ArrowRight } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Globe, Mail, ArrowRight } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -16,9 +16,9 @@ const Footer = () => {
               Elevating everyday aesthetics. Premium quality clothing designed for the modern individual.
             </p>
             <div className="social-links">
-              <a href="#" className="social-icon"><Instagram size={20} /></a>
-              <a href="#" className="social-icon"><Twitter size={20} /></a>
-              <a href="#" className="social-icon"><Facebook size={20} /></a>
+              <a href="#" className="social-icon"><Globe size={20} /></a>
+              <a href="#" className="social-icon"><MessageCircle size={20} /></a>
+              <a href="#" className="social-icon"><Mail size={20} /></a>
             </div>
           </div>
 
