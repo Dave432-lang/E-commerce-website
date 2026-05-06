@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const Checkout = () => {
-  const { cartItems, cartTotal, setIsCartOpen } = useCart();
+  const { cartItems, cartTotal, setIsCartOpen, setCartItems } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -46,9 +46,24 @@ const Checkout = () => {
   const prevStep = () => setStep(prev => prev - 1);
 
   const placeOrder = () => {
-    // Mock order placement
+    // Create order object
+    const newOrder = {
+      id: `BTQ-${Math.floor(Math.random() * 90000) + 10000}`,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      items: cartItems,
+      total: cartTotal + 15,
+      status: 'Processing',
+      shippingAddress: `${formData.address}, ${formData.city}`,
+      paymentMethod: paymentMethod === 'card' ? `Card (****${formData.cardNumber.slice(-4)})` : `Momo (${formData.momoNetwork})`
+    };
+
+    // Save to localStorage
+    const existingOrders = JSON.parse(localStorage.getItem('boutique_orders') || '[]');
+    localStorage.setItem('boutique_orders', JSON.stringify([newOrder, ...existingOrders]));
+
+    // Clear cart and show success
     setIsOrderPlaced(true);
-    // In a real app, we would clear the cart here too
+    setCartItems([]);
   };
 
   if (cartItems.length === 0 && !isOrderPlaced) {
