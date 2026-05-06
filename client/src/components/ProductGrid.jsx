@@ -21,12 +21,23 @@ const ProductGrid = ({ title, products }) => {
                 <Heart size={20} />
               </button>
               <div className="product-overlay">
-                <button className="add-to-cart-btn" onClick={(e) => { 
-                  e.preventDefault(); 
-                  addToCart(product);
-                }}>
-                  <ShoppingBag size={18} /> Add to Cart
-                </button>
+                <div className="quick-add-container">
+                  <p className="quick-add-title">Quick Add</p>
+                  <div className="quick-size-options">
+                    {['S', 'M', 'L', 'XL'].map(size => (
+                      <button 
+                        key={size}
+                        className="quick-size-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addToCart(product, 1, size);
+                        }}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="product-info">

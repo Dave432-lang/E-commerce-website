@@ -8,11 +8,21 @@ const ProductDetails = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState('M');
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [error, setError] = useState('');
 
   // Combine all dummy data to find the product
   const allProducts = [...newArrivals, ...bestSellers, ...trendingNow];
   const product = allProducts.find((p) => p.id === parseInt(id));
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      setError('Please select a size before adding to cart');
+      return;
+    }
+    setError('');
+    addToCart(product, quantity, selectedSize);
+  };
 
   if (!product) {
     return (
@@ -65,13 +75,19 @@ const ProductDetails = () => {
 
           <div className="product-options">
             <div className="size-selector">
-              <h4>Select Size</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h4 style={{ margin: 0 }}>Select Size</h4>
+                {error && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</span>}
+              </div>
               <div className="size-options">
                 {['XS', 'S', 'M', 'L', 'XL'].map(size => (
                   <button 
                     key={size}
                     className={`size-btn ${selectedSize === size ? 'active' : ''}`}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => {
+                      setSelectedSize(size);
+                      setError('');
+                    }}
                   >
                     {size}
                   </button>
@@ -90,7 +106,7 @@ const ProductDetails = () => {
           </div>
 
           <div className="product-details-actions">
-            <button className="btn-primary add-to-cart-large" onClick={() => addToCart(product, quantity, selectedSize)}>
+            <button className="btn-primary add-to-cart-large" onClick={handleAddToCart}>
               <ShoppingBag size={20} /> Add to Cart
             </button>
             <button className="wishlist-btn-large">
