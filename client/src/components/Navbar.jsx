@@ -1,8 +1,11 @@
 import React from 'react';
 import { ShoppingBag, Search, User, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 
-const Navbar = ({ onOpenCart }) => {
+const Navbar = () => {
+  const { cartCount, setIsCartOpen } = useCart();
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -15,7 +18,7 @@ const Navbar = ({ onOpenCart }) => {
         {/* Navigation Links - Hidden on Mobile */}
         <div className="navbar-links">
           <Link to="/" className="nav-link">Home</Link>
-          <a href="#shop" className="nav-link">Shop</a>
+          <Link to="/shop" className="nav-link">Shop</Link>
           <a href="#collections" className="nav-link">Collections</a>
           <a href="#about" className="nav-link">About</a>
         </div>
@@ -28,9 +31,9 @@ const Navbar = ({ onOpenCart }) => {
           <button className="icon-btn">
             <User size={22} />
           </button>
-          <button className="icon-btn cart-btn" onClick={onOpenCart}>
+          <button className="icon-btn cart-btn" onClick={() => setIsCartOpen(true)}>
             <ShoppingBag size={22} />
-            <span className="cart-badge">0</span>
+            {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
           <button className="icon-btn mobile-menu-btn">
             <Menu size={24} />

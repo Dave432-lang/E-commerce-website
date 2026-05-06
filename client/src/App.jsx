@@ -1,13 +1,15 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
+import Shop from './pages/Shop'
+import { useCart } from './context/CartContext'
 
 function App() {
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { isCartOpen, setIsCartOpen } = useCart();
 
   return (
     <div className="app-container">
@@ -18,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/shop" element={<Shop />} />
         </Routes>
       </main>
 

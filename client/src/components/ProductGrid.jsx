@@ -1,8 +1,10 @@
 import React from 'react';
 import { ShoppingBag, Heart, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 
 const ProductGrid = ({ title, products }) => {
+  const { addToCart } = useCart();
   return (
     <div className="product-section">
       <div className="section-header">
@@ -19,7 +21,10 @@ const ProductGrid = ({ title, products }) => {
                 <Heart size={20} />
               </button>
               <div className="product-overlay">
-                <button className="add-to-cart-btn" onClick={(e) => { e.preventDefault(); /* handle cart */ }}>
+                <button className="add-to-cart-btn" onClick={(e) => { 
+                  e.preventDefault(); 
+                  addToCart(product);
+                }}>
                   <ShoppingBag size={18} /> Add to Cart
                 </button>
               </div>

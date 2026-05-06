@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingBag, ArrowLeft, Heart } from 'lucide-react';
 import { newArrivals, bestSellers, trendingNow } from '../utils/dummyData';
+import { useCart } from '../context/CartContext';
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('M');
 
@@ -88,7 +90,7 @@ const ProductDetails = () => {
           </div>
 
           <div className="product-details-actions">
-            <button className="btn-primary add-to-cart-large">
+            <button className="btn-primary add-to-cart-large" onClick={() => addToCart(product, quantity, selectedSize)}>
               <ShoppingBag size={20} /> Add to Cart
             </button>
             <button className="wishlist-btn-large">
