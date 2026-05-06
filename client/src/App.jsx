@@ -6,6 +6,8 @@ import CartDrawer from './components/CartDrawer'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
 import Shop from './pages/Shop'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import { useCart } from './context/CartContext'
 
 function App() {
@@ -13,7 +15,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Navbar onOpenCart={() => setIsCartOpen(true)} />
+      <Navbar />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       
       <main style={{ width: '100%', flex: 1 }}>
@@ -21,6 +23,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </main>
 

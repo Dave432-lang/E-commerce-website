@@ -2,9 +2,11 @@ import React from 'react';
 import { ShoppingBag, Search, User, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { cartCount, setIsCartOpen } = useCart();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="navbar">
@@ -28,9 +30,20 @@ const Navbar = () => {
           <button className="icon-btn">
             <Search size={22} />
           </button>
-          <button className="icon-btn">
-            <User size={22} />
-          </button>
+          
+          {user ? (
+            <div className="user-dropdown-container">
+              <span className="user-name-nav">Hi, {user.name.split(' ')[0]}</span>
+              <button className="icon-btn" onClick={logout} title="Logout">
+                <User size={22} />
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="icon-btn">
+              <User size={22} />
+            </Link>
+          )}
+
           <button className="icon-btn cart-btn" onClick={() => setIsCartOpen(true)}>
             <ShoppingBag size={22} />
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
