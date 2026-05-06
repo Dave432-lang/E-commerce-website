@@ -8,19 +8,13 @@ const ProductDetails = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [error, setError] = useState('');
+  const [selectedSize, setSelectedSize] = useState('M');
 
   // Combine all dummy data to find the product
   const allProducts = [...newArrivals, ...bestSellers, ...trendingNow];
   const product = allProducts.find((p) => p.id === parseInt(id));
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      setError('Please select a size before adding to cart');
-      return;
-    }
-    setError('');
     addToCart(product, quantity, selectedSize);
   };
 
@@ -77,7 +71,6 @@ const ProductDetails = () => {
             <div className="size-selector">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h4 style={{ margin: 0 }}>Select Size</h4>
-                {error && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</span>}
               </div>
               <div className="size-options">
                 {['XS', 'S', 'M', 'L', 'XL'].map(size => (
@@ -86,7 +79,6 @@ const ProductDetails = () => {
                     className={`size-btn ${selectedSize === size ? 'active' : ''}`}
                     onClick={() => {
                       setSelectedSize(size);
-                      setError('');
                     }}
                   >
                     {size}

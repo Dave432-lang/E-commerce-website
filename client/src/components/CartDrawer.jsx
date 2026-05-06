@@ -3,7 +3,7 @@ import { X, ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const CartDrawer = () => {
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, isCartOpen, setIsCartOpen } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, updateSize, cartTotal, isCartOpen, setIsCartOpen } = useCart();
 
   return (
     <>
@@ -48,7 +48,19 @@ const CartDrawer = () => {
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <p className="cart-item-size">Size: {item.size}</p>
+                    
+                    <div className="cart-item-size-selector">
+                      {['S', 'M', 'L', 'XL'].map(size => (
+                        <button 
+                          key={size}
+                          className={`cart-size-btn ${item.size === size ? 'active' : ''}`}
+                          onClick={() => updateSize(item.id, item.size, size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="cart-item-row">
                       <div className="cart-item-quantity">
                         <button onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}>

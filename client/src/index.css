@@ -1040,6 +1040,39 @@ body {
   margin: 0.25rem 0;
 }
 
+.cart-item-size-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cart-size-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.cart-size-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+.cart-size-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
 .cart-item-quantity {
   display: flex;
   align-items: center;

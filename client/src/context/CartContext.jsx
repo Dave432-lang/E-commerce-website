@@ -59,6 +59,28 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+  const updateSize = (id, oldSize, newSize) => {
+    setCartItems(prevItems => {
+      const existingItemIndex = prevItems.findIndex(item => item.id === id && item.size === newSize);
+      const currentItemIndex = prevItems.findIndex(item => item.id === id && item.size === oldSize);
+      
+      if (currentItemIndex === -1) return prevItems;
+
+      const updatedItems = [...prevItems];
+      
+      if (existingItemIndex >= 0 && existingItemIndex !== currentItemIndex) {
+        // If the new size already exists, merge quantities and remove the old one
+        updatedItems[existingItemIndex].quantity += updatedItems[currentItemIndex].quantity;
+        updatedItems.splice(currentItemIndex, 1);
+      } else {
+        // Just update the size
+        updatedItems[currentItemIndex].size = newSize;
+      }
+      
+      return updatedItems;
+    });
+  };
+
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
 
@@ -68,6 +90,7 @@ export const CartProvider = ({ children }) => {
       addToCart, 
       removeFromCart, 
       updateQuantity, 
+      updateSize,
       cartTotal,
       cartCount,
       isCartOpen,
