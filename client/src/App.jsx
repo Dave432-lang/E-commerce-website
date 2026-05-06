@@ -8,6 +8,7 @@ import ProductDetails from './pages/ProductDetails'
 import Shop from './pages/Shop'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Checkout from './pages/Checkout'
 import { useCart } from './context/CartContext'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/checkout" element={<Checkout />} />
         </Routes>
       </main>
 
