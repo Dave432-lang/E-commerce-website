@@ -1,7 +1,9 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
+  const navigate = useNavigate();
   return (
     <div className="hero-section">
       <div className="hero-content">
@@ -13,10 +15,10 @@ const Hero = () => {
           Experience a new standard of shopping.
         </p>
         <div className="hero-actions">
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={() => navigate('/shop')}>
             Explore Collection <ArrowRight size={18} />
           </button>
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => navigate('/shop')}>
             View Lookbook
           </button>
         </div>

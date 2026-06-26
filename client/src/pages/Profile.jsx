@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingBag, Package, User, Settings, LogOut, ChevronRight, MapPin } from 'lucide-react';
+import { orderService } from '../services/orderService';
+import { ShoppingBag, Package, User, Settings, LogOut, ChevronRight, MapPin, Heart, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
@@ -8,20 +9,44 @@ const Profile = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('orders');
   const [orders, setOrders] = useState([]);
-
+  const [toastMessage, setToastMessage] = useState(null);
+  const [wishlist] = useState([
+    { id: 101, name: 'Minimalist Jacket', price: 120.99, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80' },
+    { id: 104, name: 'Wide-Leg Trousers', price: 85.50, image: 'https://images.unsplash.com/photo-1584370848010-d7fe6bc767ec?auto=format&fit=crop&w=800&q=80' }
+  ]);
   useEffect(() => {
-    // Load orders from localStorage
-    const savedOrders = JSON.parse(localStorage.getItem('boutique_orders') || '[]');
-    setOrders(savedOrders);
-  }, []);
+    const fetchMyOrders = async () => {
+      try {
+        const data = await orderService.getMyOrders();
+        setOrders(data);
+      } catch (error) {
+        console.error('Failed to load real database orders:', error);
+      }
+    };
+
+    if (user) {
+      fetchMyOrders();
+    }
+  }, [user]);
+
+  const handleUpdateProfile = (e) => {
+    e.preventDefault();
+    setToastMessage('Profile updated successfully!');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
   if (!user) {
-    navigate('/login');
     return null;
   }
 
@@ -49,6 +74,12 @@ const Profile = () => {
             onClick={() => setActiveTab('orders')}
           >
             <Package size={20} /> My Orders
+          </button>
+          <button 
+            className={`sidebar-link ${activeTab === 'wishlist' ? 'active' : ''}`}
+            onClick={() => setActiveTab('wishlist')}
+          >
+            <Heart size={20} /> Wishlist
           </button>
           <button 
             className={`sidebar-link ${activeTab === 'settings' ? 'active' : ''}`}
@@ -110,10 +141,35 @@ const Profile = () => {
             </div>
           )}
 
+          {activeTab === 'wishlist' && (
+            <div className="wishlist-section">
+              <h2>My Wishlist</h2>
+              {wishlist.length === 0 ? (
+                <div className="empty-orders">
+                  <Heart size={48} />
+                  <p>Your wishlist is empty.</p>
+                </div>
+              ) : (
+                <div className="wishlist-grid">
+                  {wishlist.map(item => (
+                    <div key={item.id} className="wishlist-item-card">
+                      <img src={item.image} alt={item.name} />
+                      <div className="wishlist-item-info">
+                        <h3>{item.name}</h3>
+                        <p>${item.price.toFixed(2)}</p>
+                        <button className="btn-primary btn-small">Add to Cart</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'settings' && (
             <div className="settings-section">
               <h2>Account Settings</h2>
-              <form className="settings-form" onSubmit={(e) => e.preventDefault()}>
+              <form className="settings-form" onSubmit={handleUpdateProfile}>
                 <div className="form-group">
                   <label>Full Name</label>
                   <input type="text" defaultValue={user.name} />
@@ -122,12 +178,19 @@ const Profile = () => {
                   <label>Email Address</label>
                   <input type="email" defaultValue={user.email} />
                 </div>
-                <button className="btn-primary">Update Profile</button>
+                <button type="submit" className="btn-primary">Update Profile</button>
               </form>
             </div>
           )}
         </main>
       </div>
+      
+      {toastMessage && (
+        <div className="toast-notification">
+          <CheckCircle size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 };

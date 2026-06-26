@@ -1,22 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingBag, ArrowLeft, Heart } from 'lucide-react';
-import { newArrivals, bestSellers, trendingNow } from '../utils/dummyData';
 import { useCart } from '../context/CartContext';
+import { productService } from '../services/productService';
+import Loader from '../components/Loader/Loader';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState('M');
+  const [selectedSize, setSelectedSize] = useState('');
 
-  // Combine all dummy data to find the product
-  const allProducts = [...newArrivals, ...bestSellers, ...trendingNow];
-  const product = allProducts.find((p) => p.id === parseInt(id));
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const data = await productService.getProductById(id);
+        setProduct(data);
+        if (data.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]); // Default to first size in stock
+        }
+      } catch (error) {
+        console.error('Failed to load product details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedSize);
+    if (product) {
+      addToCart(product, quantity, selectedSize);
+    }
   };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   if (!product) {
     return (
@@ -59,33 +82,35 @@ const ProductDetails = () => {
             <span>{product.rating} (124 Reviews)</span>
           </div>
 
-          <p className="product-details-price">${product.price.toFixed(2)}</p>
+          <p className="product-details-price">${Number(product.price).toFixed(2)}</p>
 
           <p className="product-details-description">
-            Experience the perfect blend of comfort and premium aesthetics with this signature piece. 
+            {product.description || `Experience the perfect blend of comfort and premium aesthetics with this signature piece. 
             Designed with meticulous attention to detail, it features high-quality materials that ensure 
-            durability while maintaining a sleek, modern silhouette. Perfect for elevating your everyday style.
+            durability while maintaining a sleek, modern silhouette. Perfect for elevating your everyday style.`}
           </p>
 
           <div className="product-options">
-            <div className="size-selector">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h4 style={{ margin: 0 }}>Select Size</h4>
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="size-selector">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h4 style={{ margin: 0 }}>Select Size</h4>
+                </div>
+                <div className="size-options">
+                  {product.sizes.map(size => (
+                    <button 
+                      key={size}
+                      className={`size-btn ${selectedSize === size ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedSize(size);
+                      }}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="size-options">
-                {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                  <button 
-                    key={size}
-                    className={`size-btn ${selectedSize === size ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedSize(size);
-                    }}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             <div className="quantity-selector">
               <h4>Quantity</h4>

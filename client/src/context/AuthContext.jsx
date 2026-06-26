@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -9,65 +10,73 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is saved in localStorage
-    const savedUser = localStorage.getItem('boutique_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    const bootstrapAuth = async () => {
+      const token = localStorage.getItem('boutique_token');
+      const savedUser = localStorage.getItem('boutique_user');
+
+      if (token && savedUser) {
+        try {
+          // Verify token by fetching the fresh user profile from backend
+          const freshUser = await authService.getProfile();
+          setUser(freshUser);
+          localStorage.setItem('boutique_user', JSON.stringify(freshUser));
+        } catch (error) {
+          console.error('Failed to auto-authenticate user:', error);
+          // Token expired or invalid, clear localStorage
+          logout();
+        }
+      }
+      setLoading(false);
+    };
+
+    bootstrapAuth();
   }, []);
 
   const login = async (email, password) => {
-    // Mock login logic
     setLoading(true);
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Find user in mock "database" (localStorage users)
-        const users = JSON.parse(localStorage.getItem('boutique_all_users') || '[]');
-        const foundUser = users.find(u => u.email === email && u.password === password);
-
-        if (foundUser) {
-          const userData = { id: foundUser.id, name: foundUser.name, email: foundUser.email };
-          setUser(userData);
-          localStorage.setItem('boutique_user', JSON.stringify(userData));
-          setLoading(false);
-          resolve(userData);
-        } else {
-          setLoading(false);
-          reject(new Error('Invalid email or password'));
-        }
-      }, 800);
-    });
+    try {
+      const data = await authService.login(email, password);
+      
+      // Store token and user data
+      localStorage.setItem('boutique_token', data.token);
+      
+      const userData = { id: data.id, name: data.name, email: data.email, role: data.role };
+      localStorage.setItem('boutique_user', JSON.stringify(userData));
+      
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Login Context Error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (name, email, password) => {
-    // Mock register logic
     setLoading(true);
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const users = JSON.parse(localStorage.getItem('boutique_all_users') || '[]');
-        
-        if (users.some(u => u.email === email)) {
-          setLoading(false);
-          reject(new Error('Email already exists'));
-          return;
-        }
-
-        const newUser = { id: Date.now(), name, email, password };
-        users.push(newUser);
-        localStorage.setItem('boutique_all_users', JSON.stringify(users));
-
-        const userData = { id: newUser.id, name: newUser.name, email: newUser.email };
-        setUser(userData);
-        localStorage.setItem('boutique_user', JSON.stringify(userData));
-        setLoading(false);
-        resolve(userData);
-      }, 800);
-    });
+    try {
+      const data = await authService.register(name, email, password);
+      
+      // Store token and user data
+      localStorage.setItem('boutique_token', data.token);
+      
+      const userData = { id: data.id, name: data.name, email: data.email, role: data.role };
+      localStorage.setItem('boutique_user', JSON.stringify(userData));
+      
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Register Context Error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('boutique_token');
     localStorage.removeItem('boutique_user');
   };
 

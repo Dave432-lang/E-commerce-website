@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { orderService } from '../services/orderService';
 import { 
   ChevronRight, 
   MapPin, 
@@ -10,7 +11,9 @@ import {
   Smartphone, 
   ArrowLeft, 
   ShoppingBag,
-  Truck
+  Truck,
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 
 const Checkout = () => {
@@ -20,7 +23,9 @@ const Checkout = () => {
   
   const [step, setStep] = useState(1);
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [createdOrderId, setCreatedOrderId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
@@ -28,42 +33,95 @@ const Checkout = () => {
     email: user?.email || '',
     address: '',
     city: '',
-    zipCode: '',
+    region: 'Greater Accra',
+    country: 'Ghana',
     phone: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    momoNetwork: 'MTN',
-    momoNumber: ''
   });
+
+  const ghanaRegions = [
+    'Greater Accra', 'Ashanti', 'Western', 'Eastern', 'Central', 
+    'Volta', 'Northern', 'Upper East', 'Upper West', 'Bono', 
+    'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti', 'Western North'
+  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const nextStep = () => setStep(prev => prev + 1);
-  const prevStep = () => setStep(prev => prev - 1);
+  const nextStep = () => {
+    if (step === 1) {
+      if (!formData.address || !formData.city || !formData.phone || !formData.region) {
+        setError('Please fill in all shipping fields');
+        return;
+      }
+      const cleanPhone = formData.phone.replace(/[\s\-\(\)\+]/g, '');
+      if (cleanPhone.length < 9) {
+        setError('Please enter a valid Ghana phone number (at least 9 digits)');
+        return;
+      }
+    }
+    setError('');
+    setStep(prev => prev + 1);
+  };
+  
+  const prevStep = () => {
+    setError('');
+    setStep(prev => prev - 1);
+  };
 
-  const placeOrder = () => {
-    // Create order object
-    const newOrder = {
-      id: `BTQ-${Math.floor(Math.random() * 90000) + 10000}`,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      items: cartItems,
-      total: cartTotal + 15,
-      status: 'Processing',
-      shippingAddress: `${formData.address}, ${formData.city}`,
-      paymentMethod: paymentMethod === 'card' ? `Card (****${formData.cardNumber.slice(-4)})` : `Momo (${formData.momoNetwork})`
-    };
+  const handlePaystackPayment = () => {
+    setError('');
+    setIsSubmitting(true);
 
-    // Save to localStorage
-    const existingOrders = JSON.parse(localStorage.getItem('boutique_orders') || '[]');
-    localStorage.setItem('boutique_orders', JSON.stringify([newOrder, ...existingOrders]));
+    try {
+      // Paystack inline integration setup
+      const handler = window.PaystackPop.setup({
+        key: 'pk_test_d3c3332152861c8a514d7a8f15d22bf5716dfbc2', // Test public key (supports sandbox Momo + Cards)
+        email: formData.email,
+        amount: Math.round(cartTotal * 100), // Minor units, GHS pesewas. Free shipping applied ($0 shipping!)
+        currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo) out-of-the-box!
+        ref: 'BTQ-' + Math.floor(Math.random() * 1000000000 + 1),
+        onClose: () => {
+          setIsSubmitting(false);
+          setError('Payment cancelled by user.');
+        },
+        callback: async (response) => {
+          // Payment succeeded, now verify on backend and create order in MySQL
+          try {
+            const orderResponse = await orderService.createOrder({
+              items: cartItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                size: item.size
+              })),
+              totalAmount: cartTotal, // Free shipping ($0)
+              shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+              paymentReference: response.reference,
+              paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
+            });
 
-    // Clear cart and show success
-    setIsOrderPlaced(true);
-    setCartItems([]);
+            // Set final success state
+            setCreatedOrderId(orderResponse.orderId);
+            setIsOrderPlaced(true);
+            setCartItems([]); // Clear local cart
+          } catch (err) {
+            console.error('Order Submission Error:', err);
+            setError(err.message || 'Payment verified, but saving your order to database failed. Please contact support.');
+          } finally {
+            setIsSubmitting(false);
+          }
+        }
+      });
+
+      handler.openIframe();
+    } catch (err) {
+      console.error('Paystack initialization error:', err);
+      setError('Failed to initialize Paystack. Please ensure you are online.');
+      setIsSubmitting(false);
+    }
   };
 
   if (cartItems.length === 0 && !isOrderPlaced) {
@@ -82,9 +140,12 @@ const Checkout = () => {
       <div className="order-success-page">
         <CheckCircle size={80} className="success-icon" />
         <h1>Order Placed Successfully!</h1>
-        <p>Thank you for shopping with Boutique. Your order number is <b>#BTQ-{Math.floor(Math.random() * 90000) + 10000}</b></p>
-        <p>We've sent a confirmation email to {formData.email}</p>
-        <Link to="/" className="btn-primary" style={{ marginTop: '2rem' }}>Return to Home</Link>
+        <p>Thank you for shopping with Boutique. Your order number is <b>#{createdOrderId}</b></p>
+        <p>We've sent a confirmation email to <b>{formData.email}</b></p>
+        <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <Link to="/profile" className="btn-primary">View My Orders</Link>
+          <Link to="/" className="btn-secondary">Return to Home</Link>
+        </div>
       </div>
     );
   }
@@ -100,25 +161,22 @@ const Checkout = () => {
               <span>Shipping</span>
             </div>
             <div className="step-connector" />
-            <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-              <div className="step-number">{step > 2 ? <CheckCircle size={18} /> : 2}</div>
-              <span>Payment</span>
-            </div>
-            <div className="step-connector" />
-            <div className={`step ${step >= 3 ? 'active' : ''}`}>
-              <div className="step-number">3</div>
-              <span>Review</span>
+            <div className={`step ${step >= 2 ? 'active' : ''}`}>
+              <div className="step-number">2</div>
+              <span>Payment & Review</span>
             </div>
           </div>
 
+          {error && <div className="auth-error" style={{ marginBottom: '1.5rem' }}>{error}</div>}
+
           <div className="step-content">
-            {step === 1 && (
+            {step === 1 ? (
               <div className="shipping-step">
                 <div className="step-header">
                   <MapPin size={24} />
-                  <h2>Shipping Information</h2>
+                  <h2>Shipping Information (Delivery within Ghana Only)</h2>
                 </div>
-                <form className="checkout-form">
+                <form className="checkout-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
                   <div className="form-row">
                     <div className="form-group">
                       <label>First Name</label>
@@ -131,127 +189,97 @@ const Checkout = () => {
                   </div>
                   <div className="form-group">
                     <label>Email Address</label>
-                    <input name="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" required />
+                    <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" required />
                   </div>
-                  <div className="form-group">
-                    <label>Address</label>
-                    <input name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Luxury St" required />
-                  </div>
+                  
                   <div className="form-row">
                     <div className="form-group">
-                      <label>City</label>
-                      <input name="city" value={formData.city} onChange={handleInputChange} placeholder="Accra" required />
+                      <label>Country</label>
+                      <input name="country" value="Ghana" disabled className="disabled-input" />
                     </div>
                     <div className="form-group">
-                      <label>Zip Code</label>
-                      <input name="zipCode" value={formData.zipCode} onChange={handleInputChange} placeholder="00233" required />
+                      <label>Ghana Region</label>
+                      <select name="region" value={formData.region} onChange={handleInputChange} required className="region-select">
+                        {ghanaRegions.map(reg => (
+                          <option key={reg} value={reg}>{reg} Region</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
+
+                  <div className="form-row">
+                    <div className="form-group" style={{ flex: 2 }}>
+                      <label>Address</label>
+                      <input name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Ring Road, Airport Residential Area" required />
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>City / Town</label>
+                      <input name="city" value={formData.city} onChange={handleInputChange} placeholder="Accra" required />
+                    </div>
+                  </div>
+
                   <div className="form-group">
-                    <label>Phone Number</label>
-                    <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+233 24 000 0000" required />
+                    <label>Phone Number (Ghana Mobile)</label>
+                    <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="e.g. +233 24 123 4567 or 0241234567" required />
+                  </div>
+                  
+                  <div className="step-actions">
+                    <button type="submit" className="btn-primary">
+                      Continue to Payment <ChevronRight size={18} />
+                    </button>
                   </div>
                 </form>
-                <div className="step-actions">
-                  <button className="btn-primary" onClick={nextStep}>Continue to Payment <ChevronRight size={18} /></button>
-                </div>
               </div>
-            )}
-
-            {step === 2 && (
+            ) : (
               <div className="payment-step">
                 <div className="step-header">
                   <CreditCard size={24} />
-                  <h2>Payment Method</h2>
-                </div>
-                
-                <div className="payment-tabs">
-                  <button 
-                    className={`payment-tab ${paymentMethod === 'card' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('card')}
-                  >
-                    <CreditCard size={20} />
-                    <span>Card</span>
-                  </button>
-                  <button 
-                    className={`payment-tab ${paymentMethod === 'momo' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('momo')}
-                  >
-                    <Smartphone size={20} />
-                    <span>Momo</span>
-                  </button>
+                  <h2>Review & Secure Payment</h2>
                 </div>
 
-                <div className="payment-form-container">
-                  {paymentMethod === 'card' ? (
-                    <div className="card-form">
-                      <div className="form-group">
-                        <label>Card Number</label>
-                        <input name="cardNumber" value={formData.cardNumber} onChange={handleInputChange} placeholder="0000 0000 0000 0000" />
-                      </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Expiry Date</label>
-                          <input name="expiry" value={formData.expiry} onChange={handleInputChange} placeholder="MM/YY" />
-                        </div>
-                        <div className="form-group">
-                          <label>CVV</label>
-                          <input name="cvv" value={formData.cvv} onChange={handleInputChange} placeholder="123" />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="momo-form">
-                      <div className="form-group">
-                        <label>Network</label>
-                        <select name="momoNetwork" value={formData.momoNetwork} onChange={handleInputChange}>
-                          <option value="MTN">MTN MoMo</option>
-                          <option value="Vodafone">Vodafone Cash</option>
-                          <option value="AirtelTigo">AirtelTigo Money</option>
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Momo Number</label>
-                        <input name="momoNumber" value={formData.momoNumber} onChange={handleInputChange} placeholder="+233 24 000 0000" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="step-actions">
-                  <button className="btn-secondary" onClick={prevStep}><ArrowLeft size={18} /> Back</button>
-                  <button className="btn-primary" onClick={nextStep}>Review Order <ChevronRight size={18} /></button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="review-step">
-                <div className="step-header">
-                  <CheckCircle size={24} />
-                  <h2>Order Review</h2>
-                </div>
-
-                <div className="review-details">
+                <div className="review-summary-block">
                   <div className="review-section">
-                    <h4>Shipping to</h4>
-                    <p>{formData.firstName} {formData.lastName}</p>
+                    <h4>Shipping Address</h4>
+                    <p><b>{formData.firstName} {formData.lastName}</b></p>
                     <p>{formData.address}, {formData.city}</p>
-                    <p>{formData.phone}</p>
+                    <p>{formData.region} Region, Ghana</p>
+                    <p>Phone: {formData.phone}</p>
                   </div>
-                  <div className="review-section">
-                    <h4>Payment Method</h4>
-                    {paymentMethod === 'card' ? (
-                      <p>Credit Card ending in {formData.cardNumber.slice(-4) || '****'}</p>
-                    ) : (
-                      <p>Mobile Money ({formData.momoNetwork}) - {formData.momoNumber}</p>
-                    )}
+
+                  <div className="payment-info-box">
+                    <div className="secure-badge">
+                      <ShieldCheck size={20} className="icon-success" />
+                      <span>Secured by Paystack</span>
+                    </div>
+                    <p className="paystack-help-text">
+                      Supports Visa, Mastercard, and Mobile Money (MTN, Telecel, AirtelTigo).
+                    </p>
+                    <div className="payment-network-logos">
+                      <div className="logo-badge">Card</div>
+                      <div className="logo-badge momo-mtn">MTN Momo</div>
+                      <div className="logo-badge momo-telecel">Telecel</div>
+                      <div className="logo-badge momo-airtel">AirtelTigo</div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="step-actions">
-                  <button className="btn-secondary" onClick={prevStep}><ArrowLeft size={18} /> Back</button>
-                  <button className="btn-primary" onClick={placeOrder}>Place Order (${(cartTotal + 15).toFixed(2)})</button>
+                  <button className="btn-secondary" onClick={prevStep} disabled={isSubmitting}>
+                    <ArrowLeft size={18} /> Back to Shipping
+                  </button>
+                  
+                  <button 
+                    className="btn-primary add-to-cart-large" 
+                    onClick={handlePaystackPayment} 
+                    disabled={isSubmitting}
+                    style={{ flex: 1, padding: '1rem' }}
+                  >
+                    {isSubmitting ? (
+                      <><Loader2 className="animate-spin" size={18} /> Verifying Transaction...</>
+                    ) : (
+                      <>Pay securely with Paystack (${cartTotal.toFixed(2)})</>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
@@ -283,17 +311,17 @@ const Checkout = () => {
               </div>
               <div className="summary-row">
                 <span>Shipping</span>
-                <span>$15.00</span>
+                <span className="free-shipping-text" style={{ color: '#10b981', fontWeight: 600 }}>Free</span>
               </div>
               <div className="summary-row total">
                 <span>Total</span>
-                <span>${(cartTotal + 15).toFixed(2)}</span>
+                <span>${cartTotal.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="summary-guarantee">
               <Truck size={18} />
-              <p>Free returns within 30 days</p>
+              <p>Free delivery within Ghana</p>
             </div>
           </div>
         </aside>

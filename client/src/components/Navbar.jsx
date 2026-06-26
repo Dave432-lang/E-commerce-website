@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Search, User, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { newArrivals, bestSellers, trendingNow } from '../utils/dummyData';
+import { productService } from '../services/productService';
 
 const Navbar = () => {
   const { cartCount, setIsCartOpen } = useCart();
@@ -12,10 +12,22 @@ const Navbar = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [products, setProducts] = useState([]);
 
-  const allProducts = [...newArrivals, ...bestSellers, ...trendingNow];
+  useEffect(() => {
+    const fetchSearchProducts = async () => {
+      try {
+        const data = await productService.getAllProducts();
+        setProducts(data);
+      } catch (error) {
+        console.error('Failed to load products for navbar search:', error);
+      }
+    };
+    fetchSearchProducts();
+  }, []);
+
   const searchResults = searchQuery 
-    ? allProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5)
+    ? products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5)
     : [];
 
   const handleSearchSubmit = (e) => {
@@ -40,8 +52,8 @@ const Navbar = () => {
         <div className="navbar-links">
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/shop" className="nav-link">Shop</Link>
-          <a href="#collections" className="nav-link">Collections</a>
-          <a href="#about" className="nav-link">About</a>
+          <Link to="/shop" className="nav-link">Collections</Link>
+          <Link to="/about" className="nav-link">About</Link>
         </div>
 
         {/* Icons */}
@@ -109,6 +121,11 @@ const Navbar = () => {
           
           {user ? (
             <div className="user-dropdown-container">
+              {user.role === 'admin' && (
+                <Link to="/admin" className="nav-link admin-nav-link" style={{ marginRight: '1rem', color: 'var(--primary)', fontWeight: 600 }}>
+                  Admin Panel
+                </Link>
+              )}
               <Link to="/profile" className="user-name-nav">Hi, {user.name.split(' ')[0]}</Link>
               <button className="icon-btn" onClick={logout} title="Logout">
                 <User size={22} />

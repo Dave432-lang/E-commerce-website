@@ -14,14 +14,28 @@ const adjectives = ['Minimalist', 'Silk Blend', 'Oversized', 'Tailored', 'Classi
 const nouns = ['Jacket', 'Slip Dress', 'Wool Sweater', 'Wide-Leg Trousers', 'Oxford Shirt', 'Tote Bag', 'Crop Top', 'T-Shirt'];
 
 const generateProducts = (startIndex) => {
-  return Array.from({ length: 8 }).map((_, i) => ({
-    id: startIndex + i,
-    name: `${adjectives[(startIndex + i) % 8]} ${nouns[(startIndex + i + 2) % 8]}`,
-    price: Math.floor(Math.random() * (300 - 40 + 1) + 40) + 0.99,
-    rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1),
-    category: categories[(startIndex + i) % 8],
-    image: fashionImages[(startIndex + i) % 8],
-  }));
+  const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
+  const allColors = ['Black', 'White', 'Beige', 'Navy', 'Olive'];
+
+  return Array.from({ length: 8 }).map((_, i) => {
+    // Generate random subset of sizes and colors for each product
+    const productSizes = allSizes.filter(() => Math.random() > 0.3);
+    if (productSizes.length === 0) productSizes.push('M'); // Ensure at least one size
+
+    const productColors = allColors.filter(() => Math.random() > 0.4);
+    if (productColors.length === 0) productColors.push('Black'); // Ensure at least one color
+
+    return {
+      id: startIndex + i,
+      name: `${adjectives[(startIndex + i) % 8]} ${nouns[(startIndex + i + 2) % 8]}`,
+      price: Math.floor(Math.random() * (300 - 40 + 1) + 40) + 0.99,
+      rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1),
+      category: categories[(startIndex + i) % 8],
+      image: fashionImages[(startIndex + i) % 8],
+      sizes: productSizes,
+      colors: productColors
+    };
+  });
 };
 
 export const newArrivals = generateProducts(100);
