@@ -20,5 +20,13 @@ export const authService = {
   // Get current user profile
   getProfile: async () => {
     return await apiRequest('/auth/profile');
+  },
+
+  // Update user profile
+  updateProfile: async (name, email) => {
+    return await apiRequest('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name, email })
+    });
   }
 };

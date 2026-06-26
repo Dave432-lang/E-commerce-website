@@ -48,7 +48,21 @@ const runMigrations = async () => {
     `);
     console.log('Successfully verified cart_items table exists in database.');
 
-    // 3. Update admin user seed password hash (to standard 'admin123') if it has placeholder
+    // 3. Create wishlists table for database-backed wishlist persistence
+    await query(`
+      CREATE TABLE IF NOT EXISTS wishlists (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        UNIQUE KEY uniq_user_product (user_id, product_id)
+      ) ENGINE=InnoDB;
+    `);
+    console.log('Successfully verified wishlists table exists in database.');
+
+    // 4. Update admin user seed password hash (to standard 'admin123') if it has placeholder
     await query(`
       UPDATE users 
       SET password_hash = '$2a$10$tZ8.sM1M7l67yA.E1P3FteS.J8L2F250nZ0Uf.n2e.32l42o3FbeW' 

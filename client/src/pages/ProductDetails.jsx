@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingBag, ArrowLeft, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { productService } from '../services/productService';
+import { wishlistService } from '../services/wishlistService';
 import Loader from '../components/Loader/Loader';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
+  const [inWishlist, setInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -19,7 +25,7 @@ const ProductDetails = () => {
         const data = await productService.getProductById(id);
         setProduct(data);
         if (data.sizes && data.sizes.length > 0) {
-          setSelectedSize(data.sizes[0]); // Default to first size in stock
+          setSelectedSize(data.sizes[0]);
         }
       } catch (error) {
         console.error('Failed to load product details:', error);
@@ -31,9 +37,49 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
+  // Check if product is in wishlist when user is logged in
+  useEffect(() => {
+    if (!user || !product) return;
+
+    const checkWishlist = async () => {
+      try {
+        const wishlistItems = await wishlistService.getWishlist();
+        setInWishlist(wishlistItems.some(item => item.id === product.id));
+      } catch (error) {
+        console.error('Failed to check wishlist status:', error);
+      }
+    };
+
+    checkWishlist();
+  }, [user, product]);
+
   const handleAddToCart = () => {
     if (product) {
       addToCart(product, quantity, selectedSize);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      // Redirect to login with a message
+      return;
+    }
+
+    setWishlistLoading(true);
+    try {
+      if (inWishlist) {
+        await wishlistService.removeFromWishlist(product.id);
+        setInWishlist(false);
+      } else {
+        await wishlistService.addToWishlist(product.id);
+        setInWishlist(true);
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -52,14 +98,26 @@ const ProductDetails = () => {
     );
   }
 
+  // Render star rating based on actual product rating
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        size={16}
+        fill={i < Math.round(rating) ? '#fbbf24' : 'none'}
+        color={i < Math.round(rating) ? '#fbbf24' : '#d1d5db'}
+      />
+    ));
+  };
+
   return (
     <div className="product-details-page">
       <div className="back-link-container">
-        <Link to="/" className="back-link">
-          <ArrowLeft size={16} /> Back to Collection
+        <Link to="/shop" className="back-link">
+          <ArrowLeft size={16} /> Back to Shop
         </Link>
       </div>
-      
+
       <div className="product-details-grid">
         {/* Product Image */}
         <div className="product-details-image">
@@ -70,16 +128,10 @@ const ProductDetails = () => {
         <div className="product-details-info">
           <p className="product-category">{product.category}</p>
           <h1 className="product-details-title">{product.name}</h1>
-          
+
           <div className="product-details-rating">
-            <div className="stars">
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-            </div>
-            <span>{product.rating} (124 Reviews)</span>
+            <div className="stars">{renderStars(product.rating)}</div>
+            <span>{product.rating} Rating</span>
           </div>
 
           <p className="product-details-price">${Number(product.price).toFixed(2)}</p>
@@ -98,12 +150,10 @@ const ProductDetails = () => {
                 </div>
                 <div className="size-options">
                   {product.sizes.map(size => (
-                    <button 
+                    <button
                       key={size}
                       className={`size-btn ${selectedSize === size ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedSize(size);
-                      }}
+                      onClick={() => setSelectedSize(size)}
                     >
                       {size}
                     </button>
@@ -123,16 +173,31 @@ const ProductDetails = () => {
           </div>
 
           <div className="product-details-actions">
-            <button className="btn-primary add-to-cart-large" onClick={handleAddToCart}>
-              <ShoppingBag size={20} /> Add to Cart
+            <button
+              className={`btn-primary add-to-cart-large ${addedToCart ? 'btn-success' : ''}`}
+              onClick={handleAddToCart}
+            >
+              <ShoppingBag size={20} />
+              {addedToCart ? 'Added!' : 'Add to Cart'}
             </button>
-            <button className="wishlist-btn-large">
-              <Heart size={24} />
+            <button
+              className={`wishlist-btn-large ${inWishlist ? 'active' : ''}`}
+              onClick={handleWishlistToggle}
+              disabled={wishlistLoading}
+              title={user ? (inWishlist ? 'Remove from wishlist' : 'Add to wishlist') : 'Login to save to wishlist'}
+            >
+              <Heart size={24} fill={inWishlist ? 'currentColor' : 'none'} />
             </button>
           </div>
 
+          {!user && (
+            <p className="wishlist-login-hint">
+              <Link to="/login">Log in</Link> to save items to your wishlist.
+            </p>
+          )}
+
           <div className="product-meta">
-            <p><strong>Free Shipping</strong> on orders over $150</p>
+            <p><strong>Free Shipping</strong> on all orders within Ghana</p>
             <p><strong>Returns:</strong> Accepted within 30 days</p>
           </div>
         </div>

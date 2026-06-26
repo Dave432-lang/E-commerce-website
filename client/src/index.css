@@ -3008,3 +3008,93 @@ body {
     gap: 1rem;
   }
 }
+
+/* ===============================================
+   Wishlist Additions
+   =============================================== */
+
+.wishlist-item-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.wishlist-remove-btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f87171;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.wishlist-item-card:hover .wishlist-remove-btn {
+  opacity: 1;
+}
+
+.wishlist-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.wishlist-price {
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.badge-count {
+  background: var(--primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 50px;
+  padding: 0.1rem 0.45rem;
+  margin-left: 0.35rem;
+  line-height: 1.4;
+}
+
+.wishlist-login-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+.wishlist-login-hint a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.wishlist-btn-large.active {
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+/* Order status badge variants for profile page */
+.order-status-badge {
+  padding: 0.3rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.order-status-badge.status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.order-status-badge.status-processing { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+.order-status-badge.status-shipped { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.order-status-badge.status-delivered { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.order-status-badge.status-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+

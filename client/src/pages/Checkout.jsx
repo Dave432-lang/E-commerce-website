@@ -77,7 +77,7 @@ const Checkout = () => {
     try {
       // Paystack inline integration setup
       const handler = window.PaystackPop.setup({
-        key: 'pk_test_d3c3332152861c8a514d7a8f15d22bf5716dfbc2', // Test public key (supports sandbox Momo + Cards)
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d3c3332152861c8a514d7a8f15d22bf5716dfbc2',
         email: formData.email,
         amount: Math.round(cartTotal * 100), // Minor units, GHS pesewas. Free shipping applied ($0 shipping!)
         currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo) out-of-the-box!

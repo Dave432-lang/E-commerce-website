@@ -108,3 +108,36 @@ export const getCurrentUser = async (req, res) => {
     res.status(500).json({ message: 'Server Error retrieving profile' });
   }
 };
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+  const { name, email } = req.body;
+  const userId = req.user.id;
+
+  if (!name || !email) {
+    return res.status(400).json({ message: 'Name and email are required' });
+  }
+
+  try {
+    // If email is different, check if new email is already taken
+    if (email !== req.user.email) {
+      const existingUser = await query('SELECT * FROM users WHERE email = ? AND id != ?', [email, userId]);
+      if (existingUser.length > 0) {
+        return res.status(400).json({ message: 'Email is already in use by another account' });
+      }
+    }
+
+    // Update in database
+    await query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, userId]);
+
+    // Fetch updated user info
+    const rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [userId]);
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Update User Profile Error:', error);
+    res.status(500).json({ message: 'Server Error updating profile' });
+  }
+};
