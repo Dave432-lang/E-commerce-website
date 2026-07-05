@@ -20,7 +20,7 @@ export const query = async (sql, params) => {
   return rows;
 };
 
-// Run migration to add shipping_address and payment_method to orders if not exists
+// Run migration to add shipping_address, payment_method and payment_reference to orders if not exists
 const runMigrations = async () => {
   try {
     // 1. Migrate orders table if needed
@@ -29,6 +29,12 @@ const runMigrations = async () => {
       await query("ALTER TABLE orders ADD COLUMN shipping_address TEXT NULL");
       await query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(100) DEFAULT 'Paystack (Card/Momo)'");
       console.log('Successfully completed order table database migration (added shipping_address and payment_method columns).');
+    }
+
+    const refColumns = await query("SHOW COLUMNS FROM orders LIKE 'payment_reference'");
+    if (refColumns.length === 0) {
+      await query("ALTER TABLE orders ADD COLUMN payment_reference VARCHAR(255) UNIQUE NULL");
+      console.log('Successfully completed order table database migration (added payment_reference column).');
     }
 
     // 2. Create cart_items table for database-backed cart persistence

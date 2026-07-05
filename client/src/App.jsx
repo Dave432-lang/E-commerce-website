@@ -12,6 +12,7 @@ import Checkout from './pages/Checkout'
 import Profile from './pages/Profile'
 import SearchResults from './pages/SearchResults'
 import About from './pages/About'
+import Cart from './pages/Cart'
 import AdminRoute from './components/AdminRoute'
 import AdminLayout from './components/AdminLayout'
 import Dashboard from './pages/Admin/Dashboard'
@@ -37,6 +38,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/cart" element={<Cart />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/about" element={<About />} />
           

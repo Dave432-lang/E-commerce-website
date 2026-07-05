@@ -82,6 +82,18 @@ const Checkout = () => {
         amount: Math.round(cartTotal * 100), // Minor units, GHS pesewas. Free shipping applied ($0 shipping!)
         currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo) out-of-the-box!
         ref: 'BTQ-' + Math.floor(Math.random() * 1000000000 + 1),
+        metadata: {
+          userId: user.id,
+          shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+          items: cartItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color
+          }))
+        },
         onClose: () => {
           setIsSubmitting(false);
           setError('Payment cancelled by user.');
@@ -95,7 +107,8 @@ const Checkout = () => {
                 name: item.name,
                 price: item.price,
                 quantity: item.quantity,
-                size: item.size
+                size: item.size,
+                color: item.color
               })),
               totalAmount: cartTotal, // Free shipping ($0)
               shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,

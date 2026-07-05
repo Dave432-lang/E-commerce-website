@@ -1,4 +1,5 @@
 import { pool, query } from '../config/db.js';
+import { paymentService } from '../services/paymentService.js';
 
 // @desc    Create a new order & verify Paystack payment
 // @route   POST /api/orders
@@ -11,18 +12,19 @@ export const createOrder = async (req, res) => {
   }
 
   try {
-    // 1. Verify payment with Paystack
-    const paystackUrl = `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentReference)}`;
-    
-    const response = await fetch(paystackUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Check if duplicate order exists (already processed via webhook)
+    const existingOrder = await query('SELECT id FROM orders WHERE payment_reference = ?', [paymentReference]);
+    if (existingOrder.length > 0) {
+      console.log(`Order with payment reference ${paymentReference} already processed via webhook.`);
+      return res.status(201).json({
+        message: 'Order created successfully (webhook)',
+        orderId: `BTQ-${existingOrder[0].id}`,
+        total: totalAmount
+      });
+    }
 
-    const paystackData = await response.json();
+    // 1. Verify payment with Paystack
+    const paystackData = await paymentService.verifyTransaction(paymentReference);
 
     if (!paystackData.status || paystackData.data.status !== 'success') {
       return res.status(400).json({ message: 'Paystack payment verification failed' });
@@ -41,10 +43,10 @@ export const createOrder = async (req, res) => {
     await conn.beginTransaction();
 
     try {
-      // Insert into orders table
+      // Insert into orders table including payment_reference
       const [orderResult] = await conn.execute(
-        'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method) VALUES (?, ?, ?, ?, ?)',
-        [req.user.id, totalAmount, 'Processing', shippingAddress, paymentMethod || 'Paystack (Card/Momo)']
+        'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, payment_reference) VALUES (?, ?, ?, ?, ?, ?)',
+        [req.user.id, totalAmount, 'Processing', shippingAddress, paymentMethod || 'Paystack (Card/Momo)', paymentReference]
       );
       
       const orderId = orderResult.insertId;

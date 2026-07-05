@@ -137,7 +137,7 @@ const Navbar = () => {
             </Link>
           )}
 
-          <button className="icon-btn cart-btn" onClick={() => setIsCartOpen(true)}>
+          <button className="icon-btn cart-btn" onClick={() => navigate('/cart')}>
             <ShoppingBag size={22} />
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
