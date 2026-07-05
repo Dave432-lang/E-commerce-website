@@ -5,21 +5,75 @@ const parseProductArrays = (product) => {
   if (!product) return null;
   return {
     ...product,
-    price: Number(product.price), // Convert string decimal from MySQL to standard JS number to prevent crashes like .toFixed() is not a function!
-    image: product.image_url, // Map database image_url to image for frontend component compatibility
+    price: Number(product.price),
+    image: product.image_url,
     sizes: typeof product.sizes === 'string' ? JSON.parse(product.sizes) : (product.sizes || []),
     colors: typeof product.colors === 'string' ? JSON.parse(product.colors) : (product.colors || [])
   };
 };
 
-// @desc    Fetch all products
-// @route   GET /api/products
+// @desc    Fetch products with optional server-side filtering
+// @route   GET /api/products?search=&category=&color=&size=&maxPrice=&sortBy=
 // @access  Public
 export const getProducts = async (req, res) => {
   try {
-    const rows = await query('SELECT * FROM products ORDER BY created_at DESC');
-    const parsedProducts = rows.map(parseProductArrays);
-    res.json(parsedProducts);
+    const { search, category, color, size, maxPrice, sortBy } = req.query;
+
+    let sql = 'SELECT * FROM products WHERE 1=1';
+    const params = [];
+
+    // Full-text search on name and description
+    if (search && search.trim() !== '') {
+      sql += ' AND (name LIKE ? OR description LIKE ? OR category LIKE ?)';
+      const searchTerm = `%${search.trim()}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Category filter
+    if (category && category.trim() !== '') {
+      const cats = category.split(',').map(c => c.trim()).filter(Boolean);
+      if (cats.length > 0) {
+        sql += ` AND category IN (${cats.map(() => '?').join(',')})`;
+        params.push(...cats);
+      }
+    }
+
+    // JSON-based color filter (MySQL JSON_CONTAINS)
+    if (color && color.trim() !== '') {
+      const cols = color.split(',').map(c => c.trim()).filter(Boolean);
+      if (cols.length > 0) {
+        const colorClauses = cols.map(() => 'JSON_CONTAINS(colors, ?)').join(' OR ');
+        sql += ` AND (${colorClauses})`;
+        cols.forEach(c => params.push(JSON.stringify(c)));
+      }
+    }
+
+    // JSON-based size filter (MySQL JSON_CONTAINS)
+    if (size && size.trim() !== '') {
+      const sizes = size.split(',').map(s => s.trim()).filter(Boolean);
+      if (sizes.length > 0) {
+        const sizeClauses = sizes.map(() => 'JSON_CONTAINS(sizes, ?)').join(' OR ');
+        sql += ` AND (${sizeClauses})`;
+        sizes.forEach(s => params.push(JSON.stringify(s)));
+      }
+    }
+
+    // Max price filter
+    if (maxPrice && !isNaN(Number(maxPrice))) {
+      sql += ' AND price <= ?';
+      params.push(Number(maxPrice));
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case 'price-low':  sql += ' ORDER BY price ASC'; break;
+      case 'price-high': sql += ' ORDER BY price DESC'; break;
+      case 'rating':     sql += ' ORDER BY rating DESC'; break;
+      default:           sql += ' ORDER BY created_at DESC'; break;
+    }
+
+    const rows = await query(sql, params);
+    res.json(rows.map(parseProductArrays));
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Server Error' });
