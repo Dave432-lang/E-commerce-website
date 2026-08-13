@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { query } from '../config/db.js';
+import { emailService } from '../services/emailService.js';
 
 // Helper to generate JWT token
 const generateToken = (id) => {
@@ -20,23 +22,19 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    // Check if user already exists
     const existingUser = await query('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUser.length > 0) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Insert user into DB
     const result = await query(
       'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
       [name, email, passwordHash]
     );
 
-    // Fetch the newly created user
     const newUser = await query(
       'SELECT id, name, email, role, created_at FROM users WHERE id = ?',
       [result.insertId]
@@ -68,7 +66,6 @@ export const loginUser = async (req, res) => {
   }
 
   try {
-    // Find user in database
     const users = await query('SELECT * FROM users WHERE email = ?', [email]);
     
     if (users.length === 0) {
@@ -77,7 +74,6 @@ export const loginUser = async (req, res) => {
 
     const user = users[0];
 
-    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -101,7 +97,6 @@ export const loginUser = async (req, res) => {
 // @access  Private
 export const getCurrentUser = async (req, res) => {
   try {
-    // req.user was set by protect middleware!
     res.json(req.user);
   } catch (error) {
     console.error('Profile Retrieval Error:', error);
@@ -109,11 +104,11 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// @desc    Update user profile
+// @desc    Update user profile (name, email, and optionally password)
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateUserProfile = async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, currentPassword, newPassword } = req.body;
   const userId = req.user.id;
 
   if (!name || !email) {
@@ -121,7 +116,7 @@ export const updateUserProfile = async (req, res) => {
   }
 
   try {
-    // If email is different, check if new email is already taken
+    // If email changed, check it is not taken
     if (email !== req.user.email) {
       const existingUser = await query('SELECT * FROM users WHERE email = ? AND id != ?', [email, userId]);
       if (existingUser.length > 0) {
@@ -129,15 +124,103 @@ export const updateUserProfile = async (req, res) => {
       }
     }
 
-    // Update in database
-    await query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, userId]);
+    // Handle optional password change
+    if (currentPassword || newPassword) {
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Both current and new password are required to update password' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters' });
+      }
 
-    // Fetch updated user info
+      // Fetch raw password hash for verification
+      const userRows = await query('SELECT password_hash FROM users WHERE id = ?', [userId]);
+      const isMatch = await bcrypt.compare(currentPassword, userRows[0].password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const newHash = await bcrypt.hash(newPassword, salt);
+      await query('UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?', [name, email, newHash, userId]);
+    } else {
+      await query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, userId]);
+    }
+
     const rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [userId]);
-
     res.json(rows[0]);
   } catch (error) {
     console.error('Update User Profile Error:', error);
     res.status(500).json({ message: 'Server Error updating profile' });
+  }
+};
+
+// @desc    Request password reset (generate token & send email)
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  try {
+    const users = await query('SELECT * FROM users WHERE email = ?', [email]);
+    // Always return 200 so we don't leak which emails exist
+    if (users.length === 0) {
+      return res.status(200).json({ message: 'If that email is registered, a password reset link has been sent to your inbox.' });
+    }
+
+    const user = users[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    await query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?', [token, expires, email]);
+
+    // Send formatted HTML email
+    await emailService.sendPasswordResetEmail(email, user.name, token);
+
+    res.status(200).json({
+      message: 'If that email is registered, a password reset link has been sent to your inbox.',
+    });
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({ message: 'Server Error during forgot password request' });
+  }
+};
+
+// @desc    Reset password using token
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ message: 'Token and new password are required' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters' });
+  }
+
+  try {
+    const users = await query(
+      'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+      [token]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    await query(
+      'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+      [newHash, users[0].id]
+    );
+
+    res.status(200).json({ message: 'Password has been reset successfully. Please log in.' });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({ message: 'Server Error during password reset' });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ProductGrid from '../components/ProductGrid';
 import ProductFilters from '../components/ProductFilters';
 import Loader from '../components/Loader/Loader';
@@ -18,36 +18,28 @@ const Shop = () => {
   const allColors = ['Black', 'White', 'Beige', 'Navy', 'Olive', 'Brown'];
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
 
+  // Fetch from server whenever any filter changes
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await productService.getFilteredProducts({
+        categories: selectedCategories,
+        colors: selectedColors,
+        sizes: selectedSizes,
+        maxPrice: priceRange,
+        sortBy
+      });
+      setProducts(data);
+    } catch (error) {
+      console.error('Failed to load shop products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCategories, selectedColors, selectedSizes, priceRange, sortBy]);
+
   useEffect(() => {
-    const fetchShopProducts = async () => {
-      try {
-        const data = await productService.getAllProducts();
-        setProducts(data);
-      } catch (error) {
-        console.error('Failed to load shop products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchShopProducts();
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    let result = products.filter(product => {
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(product.category);
-      const matchesPrice = Number(product.price) <= priceRange;
-      const matchesColor = selectedColors.length === 0 || (product.colors && product.colors.some(c => selectedColors.includes(c)));
-      const matchesSize = selectedSizes.length === 0 || (product.sizes && product.sizes.some(s => selectedSizes.includes(s)));
-      return matchesCategory && matchesPrice && matchesColor && matchesSize;
-    });
-
-    if (sortBy === 'price-low') result.sort((a, b) => Number(a.price) - Number(b.price));
-    if (sortBy === 'price-high') result.sort((a, b) => Number(b.price) - Number(a.price));
-    if (sortBy === 'rating') result.sort((a, b) => Number(b.rating) - Number(a.rating));
-
-    return result;
-  }, [products, selectedCategories, priceRange, sortBy, selectedColors, selectedSizes]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   const toggleCategory = (category) => {
     setSelectedCategories(prev => 
@@ -74,6 +66,7 @@ const Shop = () => {
     setPriceRange(500);
     setSelectedColors([]);
     setSelectedSizes([]);
+    setSortBy('featured');
   };
 
   return (
@@ -106,7 +99,7 @@ const Shop = () => {
           {/* Main Content */}
           <main className="shop-main">
             <div className="shop-toolbar">
-              <p className="results-count">{filteredProducts.length} Products Found</p>
+              <p className="results-count">{products.length} Products Found</p>
               <div className="sort-dropdown">
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                   <option value="featured">Featured</option>
@@ -117,8 +110,8 @@ const Shop = () => {
               </div>
             </div>
 
-            {filteredProducts.length > 0 ? (
-              <ProductGrid products={filteredProducts} />
+            {products.length > 0 ? (
+              <ProductGrid products={products} />
             ) : (
               <div className="no-results">
                 <h3>No products match your filters</h3>

@@ -37,6 +37,14 @@ const runMigrations = async () => {
       console.log('Successfully completed order table database migration (added payment_reference column).');
     }
 
+    // 3. Add password reset token columns to users table
+    const resetCols = await query("SHOW COLUMNS FROM users LIKE 'reset_token'");
+    if (resetCols.length === 0) {
+      await query("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL");
+      await query("ALTER TABLE users ADD COLUMN reset_token_expires TIMESTAMP NULL");
+      console.log('Successfully completed users table migration (added reset_token columns).');
+    }
+
     // 2. Create cart_items table for database-backed cart persistence
     await query(`
       CREATE TABLE IF NOT EXISTS cart_items (
@@ -68,7 +76,35 @@ const runMigrations = async () => {
     `);
     console.log('Successfully verified wishlists table exists in database.');
 
-    // 4. Update admin user seed password hash (to standard 'admin123') if it has placeholder
+    // 4. Add is_archived and stock_quantity to products table
+    const archiveCols = await query("SHOW COLUMNS FROM products LIKE 'is_archived'");
+    if (archiveCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0");
+      console.log('Successfully completed products table migration (added is_archived column).');
+    }
+
+    const stockCols = await query("SHOW COLUMNS FROM products LIKE 'stock_quantity'");
+    if (stockCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN stock_quantity INT NOT NULL DEFAULT 50");
+      console.log('Successfully completed products table migration (added stock_quantity column).');
+    }
+
+    // 5. Create reviews table for customer product ratings
+    await query(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+    console.log('Successfully verified reviews table exists in database.');
+
+    // 6. Update admin user seed password hash (to standard 'admin123') if it has placeholder
     await query(`
       UPDATE users 
       SET password_hash = '$2a$10$tZ8.sM1M7l67yA.E1P3FteS.J8L2F250nZ0Uf.n2e.32l42o3FbeW' 

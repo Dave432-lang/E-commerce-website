@@ -6,6 +6,9 @@ const parseProductArrays = (product) => {
   return {
     ...product,
     price: Number(product.price),
+    rating: Number(product.rating || 0),
+    stock_quantity: Number(product.stock_quantity ?? 50),
+    is_archived: Boolean(product.is_archived),
     image: product.image_url,
     sizes: typeof product.sizes === 'string' ? JSON.parse(product.sizes) : (product.sizes || []),
     colors: typeof product.colors === 'string' ? JSON.parse(product.colors) : (product.colors || [])
@@ -13,13 +16,17 @@ const parseProductArrays = (product) => {
 };
 
 // @desc    Fetch products with optional server-side filtering
-// @route   GET /api/products?search=&category=&color=&size=&maxPrice=&sortBy=
+// @route   GET /api/products?search=&category=&color=&size=&maxPrice=&sortBy=&includeArchived=
 // @access  Public
 export const getProducts = async (req, res) => {
   try {
-    const { search, category, color, size, maxPrice, sortBy } = req.query;
+    const { search, category, color, size, maxPrice, sortBy, includeArchived } = req.query;
 
     let sql = 'SELECT * FROM products WHERE 1=1';
+    // Hide archived products unless explicitly requested (e.g., by admin panel)
+    if (includeArchived !== 'true') {
+      sql += ' AND (is_archived = 0 OR is_archived IS NULL)';
+    }
     const params = [];
 
     // Full-text search on name and description

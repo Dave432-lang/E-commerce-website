@@ -22,11 +22,28 @@ export const authService = {
     return await apiRequest('/auth/profile');
   },
 
-  // Update user profile
-  updateProfile: async (name, email) => {
+  // Update user profile (optionally including password change)
+  updateProfile: async (name, email, currentPassword = null, newPassword = null) => {
     return await apiRequest('/auth/profile', {
       method: 'PUT',
-      body: JSON.stringify({ name, email })
+      body: JSON.stringify({ name, email, currentPassword, newPassword })
+    });
+  },
+
+  // Request password reset token
+  forgotPassword: async (email) => {
+    return await apiRequest('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  // Submit new password with reset token
+  resetPassword: async (token, newPassword) => {
+    return await apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword })
     });
   }
 };
+

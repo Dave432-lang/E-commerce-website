@@ -40,12 +40,71 @@ export const getDashboardStats = async (req, res) => {
     // 5. Calculate Average Order Value
     const averageOrderValue = totalOrders > 0 ? (totalSales / totalOrders) : 0;
 
+    // 6. Fetch Monthly Revenue Trend (past 6 months)
+    let monthlyRevenue = [];
+    try {
+      const monthlyRows = await query(`
+        SELECT DATE_FORMAT(created_at, '%b') AS month,
+               SUM(total_amount) AS revenue,
+               COUNT(*) AS orders
+        FROM orders
+        WHERE status != 'cancelled'
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
+        ORDER BY MIN(created_at) ASC
+        LIMIT 6
+      `);
+      monthlyRevenue = monthlyRows.map(r => ({
+        month: r.month,
+        revenue: Number(r.revenue) || 0,
+        orders: Number(r.orders) || 0
+      }));
+    } catch (e) {
+      console.warn('Could not query monthly revenue stats:', e.message);
+    }
+
+    // 7. Fetch Category Distribution
+    let categoryDistribution = [];
+    try {
+      const categoryRows = await query(`
+        SELECT p.category, SUM(oi.price_at_time * oi.quantity) AS sales, COUNT(*) as itemsSold
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+        GROUP BY p.category
+      `);
+      categoryDistribution = categoryRows.map(r => ({
+        category: r.category,
+        sales: Number(r.sales) || 0,
+        itemsSold: Number(r.itemsSold) || 0
+      }));
+    } catch (e) {
+      console.warn('Could not query category distribution stats:', e.message);
+    }
+
+    // 8. Fetch Order Status Breakdown
+    let statusBreakdown = { Pending: 0, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
+    try {
+      const statusRows = await query(`SELECT status, COUNT(*) AS count FROM orders GROUP BY status`);
+      statusRows.forEach(r => {
+        if (r.status) {
+          const key = r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase();
+          statusBreakdown[key] = Number(r.count) || 0;
+        }
+      });
+    } catch (e) {
+      console.warn('Could not query status breakdown stats:', e.message);
+    }
+
     res.json({
       totalSales,
       totalOrders,
       totalUsers,
       averageOrderValue,
-      recentOrders: formattedRecentOrders
+      recentOrders: formattedRecentOrders,
+      monthlyRevenue,
+      categoryDistribution,
+      statusBreakdown
     });
   } catch (error) {
     console.error('Fetch Dashboard Stats Error:', error);
@@ -140,7 +199,7 @@ export const updateOrderStatus = async (req, res) => {
 // @route   POST /api/admin/products
 // @access  Private/Admin
 export const addProduct = async (req, res) => {
-  const { name, description, price, category, imageUrl, sizes, colors } = req.body;
+  const { name, description, price, category, imageUrl, sizes, colors, stockQuantity } = req.body;
 
   if (!name || !price || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
@@ -149,11 +208,12 @@ export const addProduct = async (req, res) => {
   try {
     const sizesJson = sizes ? JSON.stringify(sizes) : '[]';
     const colorsJson = colors ? JSON.stringify(colors) : '[]';
+    const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
 
     const result = await query(
-      `INSERT INTO products (name, description, price, category, image_url, sizes, colors)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson]
+      `INSERT INTO products (name, description, price, category, image_url, sizes, colors, stock_quantity)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson, stock]
     );
 
     res.status(201).json({
@@ -161,7 +221,8 @@ export const addProduct = async (req, res) => {
       id: result.insertId,
       name,
       price: Number(price),
-      category
+      category,
+      stockQuantity: stock
     });
   } catch (error) {
     console.error('Add Product Error:', error);
@@ -174,7 +235,7 @@ export const addProduct = async (req, res) => {
 // @access  Private/Admin
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, category, imageUrl, sizes, colors } = req.body;
+  const { name, description, price, category, imageUrl, sizes, colors, stockQuantity, isArchived } = req.body;
 
   if (!name || !price || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
@@ -183,12 +244,14 @@ export const updateProduct = async (req, res) => {
   try {
     const sizesJson = sizes ? JSON.stringify(sizes) : '[]';
     const colorsJson = colors ? JSON.stringify(colors) : '[]';
+    const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
+    const archived = isArchived !== undefined ? (isArchived ? 1 : 0) : 0;
 
     const result = await query(
       `UPDATE products 
-       SET name = ?, description = ?, price = ?, category = ?, image_url = ?, sizes = ?, colors = ? 
+       SET name = ?, description = ?, price = ?, category = ?, image_url = ?, sizes = ?, colors = ?, stock_quantity = ?, is_archived = ? 
        WHERE id = ?`,
-      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson, id]
+      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson, stock, archived, id]
     );
 
     if (result.affectedRows === 0) {
@@ -202,7 +265,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// @desc    Delete a product from the catalog
+// @desc    Delete or soft-archive a product from the catalog
 // @route   DELETE /api/admin/products/:id
 // @access  Private/Admin
 export const deleteProduct = async (req, res) => {
@@ -218,11 +281,46 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: 'Product successfully deleted from catalog', id });
   } catch (error) {
     console.error('Delete Product Error:', error);
-    // If we have references, let the user know they cannot delete it yet
+    // If product has existing customer orders, gracefully soft-archive it instead of throwing MySQL error
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(400).json({ message: 'Cannot delete product because it has been ordered in customer orders.' });
+      try {
+        await query('UPDATE products SET is_archived = 1 WHERE id = ?', [id]);
+        return res.json({ 
+          message: 'Product contains historical customer orders and has been soft-archived instead of permanently deleted.', 
+          id, 
+          archived: true 
+        });
+      } catch (archiveErr) {
+        console.error('Soft Archive Error:', archiveErr);
+      }
     }
     res.status(500).json({ message: 'Server Error deleting product' });
+  }
+};
+
+// @desc    Toggle product archive status
+// @route   PATCH /api/admin/products/:id/archive
+// @access  Private/Admin
+export const toggleArchiveProduct = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const products = await query('SELECT is_archived FROM products WHERE id = ?', [id]);
+    if (products.length === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const newArchived = products[0].is_archived ? 0 : 1;
+    await query('UPDATE products SET is_archived = ? WHERE id = ?', [newArchived, id]);
+
+    res.json({ 
+      message: `Product successfully ${newArchived ? 'archived' : 'restored'}`, 
+      id, 
+      is_archived: Boolean(newArchived) 
+    });
+  } catch (error) {
+    console.error('Toggle Archive Error:', error);
+    res.status(500).json({ message: 'Server Error updating product archive status' });
   }
 };
 

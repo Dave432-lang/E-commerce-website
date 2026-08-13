@@ -1,5 +1,6 @@
 import { pool, query } from '../config/db.js';
 import { paymentService } from '../services/paymentService.js';
+import { emailService } from '../services/emailService.js';
 
 // @desc    Create a new order & verify Paystack payment
 // @route   POST /api/orders
@@ -61,6 +62,15 @@ export const createOrder = async (req, res) => {
 
       await conn.commit();
       conn.release();
+
+      // Trigger order confirmation email asynchronously
+      emailService.sendOrderConfirmationEmail(req.user.email, req.user.name, {
+        id: orderId,
+        total_price: totalAmount,
+        items,
+        shipping_address: shippingAddress,
+        payment_method: paymentMethod || 'Paystack (Card/Momo)'
+      });
 
       res.status(201).json({
         message: 'Order created successfully',

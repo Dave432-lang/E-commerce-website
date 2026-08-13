@@ -6,6 +6,7 @@ import {
   addProduct, 
   updateProduct, 
   deleteProduct, 
+  toggleArchiveProduct,
   getAllUsers 
 } from '../controllers/adminController.js';
 import { getProducts } from '../controllers/productController.js';
@@ -23,6 +24,7 @@ router.put('/orders/:id/status', updateOrderStatus);
 router.get('/products', getProducts);
 router.post('/products', addProduct);
 router.put('/products/:id', updateProduct);
+router.patch('/products/:id/archive', toggleArchiveProduct);
 router.delete('/products/:id', deleteProduct);
 router.get('/users', getAllUsers);
 

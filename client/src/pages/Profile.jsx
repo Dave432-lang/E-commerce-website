@@ -18,6 +18,9 @@ const Profile = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [settingsError, setSettingsError] = useState('');
   const [settingsForm, setSettingsForm] = useState({ name: '', email: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Sync form with user data when user is available
   useEffect(() => {
@@ -65,14 +68,30 @@ const Profile = () => {
     setIsUpdating(true);
     try {
       const updatedUser = await authService.updateProfile(settingsForm.name, settingsForm.email);
-      // Sync auth context with updated user data (re-store in localStorage)
       localStorage.setItem('boutique_user', JSON.stringify(updatedUser));
-      // Trigger a re-fresh of context by calling getProfile silently
       showToast('Profile updated successfully!');
     } catch (err) {
       setSettingsError(err.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return setPasswordError('New passwords do not match');
+    }
+    setIsChangingPassword(true);
+    try {
+      await authService.updateProfile(user.name, user.email, passwordForm.currentPassword, passwordForm.newPassword);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      showToast('Password changed successfully!');
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to change password. Check your current password.');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -260,6 +279,49 @@ const Profile = () => {
                   {isUpdating ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Changes'}
                 </button>
               </form>
+
+              {/* Change Password Section */}
+              <div style={{ marginTop: '2.5rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Change Password</h3>
+                <form className="settings-form" onSubmit={handleChangePassword}>
+                  {passwordError && (
+                    <div className="auth-error" style={{ marginBottom: '1rem' }}>{passwordError}</div>
+                  )}
+                  <div className="form-group">
+                    <label>Current Password</label>
+                    <input
+                      type="password"
+                      placeholder="Enter your current password"
+                      value={passwordForm.currentPassword}
+                      onChange={e => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>New Password</label>
+                    <input
+                      type="password"
+                      placeholder="Enter new password (min. 6 chars)"
+                      value={passwordForm.newPassword}
+                      onChange={e => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Confirm New Password</label>
+                    <input
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={passwordForm.confirmPassword}
+                      onChange={e => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn-secondary" disabled={isChangingPassword}>
+                    {isChangingPassword ? <><Loader2 size={16} className="animate-spin" /> Updating...</> : 'Update Password'}
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </main>

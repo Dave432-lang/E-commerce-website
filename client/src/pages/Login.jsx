@@ -71,7 +71,7 @@ const Login = () => {
           </div>
 
           <div className="form-footer">
-            <a href="#" className="forgot-password">Forgot Password?</a>
+            <Link to="/forgot-password" className="forgot-password">Forgot Password?</Link>
           </div>
 
           <button type="submit" className="btn-primary auth-submit" disabled={isSubmitting}>

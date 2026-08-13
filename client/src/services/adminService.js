@@ -10,9 +10,10 @@ export const adminService = {
     body: JSON.stringify({ status })
   }),
   // Products CRUD
-  getAllProducts: async () => await apiRequest('/admin/products'),
+  getAllProducts: async () => await apiRequest('/admin/products?includeArchived=true'),
   addProduct: async (product) => await apiRequest('/admin/products', { method: 'POST', body: JSON.stringify(product) }),
   updateProduct: async (id, product) => await apiRequest(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(product) }),
+  toggleArchiveProduct: async (id) => await apiRequest(`/admin/products/${id}/archive`, { method: 'PATCH' }),
   deleteProduct: async (id) => await apiRequest(`/admin/products/${id}`, { method: 'DELETE' }),
   // Users
   getAllUsers: async () => await apiRequest('/admin/users')

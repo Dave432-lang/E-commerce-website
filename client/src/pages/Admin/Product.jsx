@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, AlertCircle, Archive, RotateCcw } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import Loader from '../../components/Loader/Loader';
 
@@ -20,6 +20,7 @@ const Product = () => {
     price: '',
     category: '',
     imageUrl: '',
+    stockQuantity: 50,
     sizes: [],
     colors: []
   });
@@ -53,6 +54,7 @@ const Product = () => {
       price: '',
       category: '',
       imageUrl: '',
+      stockQuantity: 50,
       sizes: [],
       colors: []
     });
@@ -69,6 +71,7 @@ const Product = () => {
       price: product.price,
       category: product.category,
       imageUrl: product.image,
+      stockQuantity: product.stock_quantity ?? 50,
       sizes: product.sizes || [],
       colors: product.colors || []
     });
@@ -104,6 +107,7 @@ const Product = () => {
     const productData = {
       ...formData,
       price: Number(formData.price),
+      stockQuantity: Number(formData.stockQuantity),
       colors
     };
 
@@ -126,14 +130,27 @@ const Product = () => {
     }
   };
 
+  const handleToggleArchive = async (id) => {
+    try {
+      await adminService.toggleArchiveProduct(id);
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to toggle product archive status:', err);
+      alert(err.message || 'Error toggling product status.');
+    }
+  };
+
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('Are you sure you want to delete this product? (If it has order history, it will be safely soft-archived instead).')) {
       try {
-        await adminService.deleteProduct(id);
+        const res = await adminService.deleteProduct(id);
+        if (res.message) {
+          alert(res.message);
+        }
         fetchProducts();
       } catch (err) {
         console.error('Failed to delete product:', err);
-        alert(err.message || 'Cannot delete product. It may have orders referencing it.');
+        alert(err.message || 'Error processing deletion.');
       }
     }
   };
@@ -145,7 +162,7 @@ const Product = () => {
       <div className="admin-page-header">
         <div>
           <h1>Products Catalogue</h1>
-          <p className="admin-page-subtitle">Add, edit, or delete items in your inventory</p>
+          <p className="admin-page-subtitle">Add, edit, archive, or manage stock in your inventory</p>
         </div>
         <button className="btn-primary" onClick={openAddModal}>
           <Plus size={18} /> Add New Product
@@ -167,57 +184,83 @@ const Product = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th style={{ width: '80px' }}>Image</th>
+                  <th style={{ width: '70px' }}>Image</th>
                   <th>Product Name</th>
                   <th>Category</th>
                   <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
                   <th>Sizes</th>
-                  <th>Colors</th>
-                  <th style={{ width: '120px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '130px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td>
-                      <div className="admin-table-img">
-                        <img src={product.image} alt={product.name} />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="product-table-name">
-                        <b>{product.name}</b>
-                        <p className="product-desc-trunc">{product.description || 'No description provided.'}</p>
-                      </div>
-                    </td>
-                    <td><span className="category-tag">{product.category}</span></td>
-                    <td><b>${Number(product.price).toFixed(2)}</b></td>
-                    <td>
-                      <div className="table-chips">
-                        {(product.sizes || []).map(s => (
-                          <span key={s} className="table-chip size-chip">{s}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="table-chips">
-                        {(product.colors || []).map(c => (
-                          <span key={c} className="table-chip color-chip" style={{ borderLeft: `4px solid ${c.toLowerCase() === 'white' ? '#ccc' : c.toLowerCase()}` }}>{c}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="action-btn edit-btn" onClick={() => openEditModal(product)} title="Edit">
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="action-btn delete-btn" onClick={() => handleDelete(product.id)} title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {products.map((product) => {
+                  const stock = product.stock_quantity ?? 50;
+                  const isArchived = Boolean(product.is_archived);
+                  return (
+                    <tr key={product.id} style={isArchived ? { opacity: 0.6, background: '#fafafa' } : {}}>
+                      <td>
+                        <div className="admin-table-img">
+                          <img src={product.image} alt={product.name} />
+                        </div>
+                      </td>
+                      <td>
+                        <div className="product-table-name">
+                          <b>{product.name}</b>
+                          <p className="product-desc-trunc">{product.description || 'No description provided.'}</p>
+                        </div>
+                      </td>
+                      <td><span className="category-tag">{product.category}</span></td>
+                      <td><b>${Number(product.price).toFixed(2)}</b></td>
+                      <td>
+                        <span style={{ 
+                          fontWeight: 600, 
+                          color: stock === 0 ? '#dc2626' : stock < 10 ? '#d97706' : '#16a34a' 
+                        }}>
+                          {stock}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 600, 
+                          padding: '0.2rem 0.5rem', 
+                          borderRadius: '12px', 
+                          backgroundColor: isArchived ? '#f3f4f6' : '#dcfce7',
+                          color: isArchived ? '#6b7280' : '#16a34a'
+                        }}>
+                          {isArchived ? 'Archived' : 'Active'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="table-chips">
+                          {(product.sizes || []).map(s => (
+                            <span key={s} className="table-chip size-chip">{s}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <button className="action-btn edit-btn" onClick={() => openEditModal(product)} title="Edit">
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            className="action-btn" 
+                            onClick={() => handleToggleArchive(product.id)} 
+                            title={isArchived ? "Restore product to shop" : "Archive product"}
+                            style={{ color: isArchived ? '#16a34a' : '#d97706' }}
+                          >
+                            {isArchived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                          </button>
+                          <button className="action-btn delete-btn" onClick={() => handleDelete(product.id)} title="Delete / Soft Archive">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -271,6 +314,18 @@ const Product = () => {
                       value={formData.price} 
                       onChange={handleInputChange} 
                       placeholder="e.g. 149.99" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Stock Quantity <span className="text-danger">*</span></label>
+                    <input 
+                      name="stockQuantity" 
+                      type="number" 
+                      min="0" 
+                      value={formData.stockQuantity} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. 50" 
                       required 
                     />
                   </div>
