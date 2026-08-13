@@ -22,6 +22,7 @@ const ProductDetails = () => {
 
   // Reviews state
   const [reviews, setReviews] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -29,16 +30,29 @@ const ProductDetails = () => {
   const [reviewSuccess, setReviewSuccess] = useState('');
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     const fetchProductAndReviews = async () => {
       try {
-        const [productData, reviewsData] = await Promise.all([
+        setLoading(true);
+        const [productData, reviewsData, allProducts] = await Promise.all([
           productService.getProductById(id),
-          reviewService.getProductReviews(id)
+          reviewService.getProductReviews(id),
+          productService.getAllProducts()
         ]);
         setProduct(productData);
         setReviews(reviewsData);
         if (productData.sizes && productData.sizes.length > 0) {
           setSelectedSize(productData.sizes[0]);
+        }
+
+        // Filter out current product and prioritize same category items
+        if (Array.isArray(allProducts)) {
+          const filtered = allProducts.filter(p => Number(p.id) !== Number(id));
+          const sameCategory = filtered.filter(p => p.category === productData.category);
+          const otherCategory = filtered.filter(p => p.category !== productData.category);
+          const combined = [...sameCategory, ...otherCategory].slice(0, 4);
+          setRelatedProducts(combined);
         }
       } catch (error) {
         console.error('Failed to load product details:', error);
@@ -358,6 +372,88 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Related Products / You Might Also Like Section */}
+      {relatedProducts.length > 0 && (
+        <div className="related-products-section" style={{ marginTop: '5rem', paddingTop: '3rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.85rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>
+              You Might Also Like
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+              Handpicked recommendations to complement your wardrobe
+            </p>
+          </div>
+
+          <div 
+            className="related-products-grid" 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+              gap: '2rem' 
+            }}
+          >
+            {relatedProducts.map((relItem) => (
+              <div 
+                key={relItem.id} 
+                className="related-product-card"
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <Link to={`/product/${relItem.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ height: '260px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+                    <img 
+                      src={relItem.image_url || relItem.image || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=600'} 
+                      alt={relItem.name} 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=600';
+                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
+                    />
+                    <span style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', padding: '4px 10px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)' }}>
+                      {relItem.category}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {relItem.name}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Star size={14} fill="#fbbf24" color="#fbbf24" />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{relItem.rating || 4.8}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({relItem.reviews_count || 12})</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)' }}>
+                        ${Number(relItem.price).toFixed(2)}
+                      </span>
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addToCart(relItem, 1, relItem.sizes?.[0] || 'M', relItem.colors?.[0] || 'Default');
+                        }}
+                        className="btn-primary" 
+                        style={{ padding: '6px 14px', borderRadius: '50px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                      >
+                        <ShoppingBag size={14} /> Add
+                      </button>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
