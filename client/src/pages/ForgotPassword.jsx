@@ -32,7 +32,7 @@ const ForgotPassword = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <Link to="/" className="navbar-logo" style={{ marginBottom: '2rem' }}>
+          <Link to="/" className="navbar-logo" style={{ marginBottom: '2rem', textDecoration: 'none' }}>
             <ShoppingBag className="icon-primary" size={32} />
             <span className="logo-text">Boutique</span>
           </Link>
@@ -42,19 +42,20 @@ const ForgotPassword = () => {
 
         {resetToken ? (
           <div style={{ textAlign: 'center' }}>
-            <CheckCircle size={48} style={{ color: '#10b981', marginBottom: '1rem' }} />
-            <h3 style={{ marginBottom: '0.5rem' }}>Reset Token Generated!</h3>
+            <CheckCircle size={48} style={{ color: '#10b981', margin: '0 auto 1rem' }} />
+            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text)' }}>Reset Token Generated!</h3>
             {resetToken !== '__sent__' && (
-              <div style={{ background: '#f3f4f6', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', wordBreak: 'break-all' }}>
-                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px' }}>Your reset token (dev mode):</p>
-                <p style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.875rem' }}>{resetToken}</p>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', wordBreak: 'break-all' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Your reset token (dev mode):</p>
+                <p style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.875rem', color: 'var(--primary)' }}>{resetToken}</p>
               </div>
             )}
-            <Link to={`/reset-password?token=${resetToken}`} className="btn-primary" style={{ display: 'block', textDecoration: 'none', padding: '0.875rem', borderRadius: '8px', textAlign: 'center' }}>
-              Continue to Reset Password
+            <Link to={`/reset-password?token=${resetToken}`} className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', padding: '0.875rem', borderRadius: '50px', textAlign: 'center' }}>
+              <span>Continue to Reset Password</span>
+              <ArrowRight size={18} />
             </Link>
-            <p style={{ marginTop: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-              <Link to="/login">Back to Login</Link>
+            <p style={{ marginTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              <Link to="/login" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Back to Login</Link>
             </p>
           </div>
         ) : (
@@ -76,7 +77,17 @@ const ForgotPassword = () => {
               </div>
 
               <button type="submit" className="btn-primary auth-submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Send Reset Token <ArrowRight size={18} /></>}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send Reset Token</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
             </form>
 

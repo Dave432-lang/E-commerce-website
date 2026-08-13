@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { ShoppingBag, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../services/authService';
 
 const ResetPassword = () => {
@@ -10,6 +10,7 @@ const ResetPassword = () => {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +43,7 @@ const ResetPassword = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <Link to="/" className="navbar-logo" style={{ marginBottom: '2rem' }}>
+          <Link to="/" className="navbar-logo" style={{ marginBottom: '2rem', textDecoration: 'none' }}>
             <ShoppingBag className="icon-primary" size={32} />
             <span className="logo-text">Boutique</span>
           </Link>
@@ -58,12 +59,20 @@ const ResetPassword = () => {
             <div className="input-wrapper">
               <Lock size={18} className="input-icon" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Enter new password (min. 6 chars)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
+              <button 
+                type="button" 
+                className="toggle-password-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -72,7 +81,7 @@ const ResetPassword = () => {
             <div className="input-wrapper">
               <Lock size={18} className="input-icon" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Confirm your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -82,7 +91,17 @@ const ResetPassword = () => {
           </div>
 
           <button type="submit" className="btn-primary auth-submit" disabled={isSubmitting || !token}>
-            {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Reset Password <ArrowRight size={18} /></>}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Resetting...</span>
+              </>
+            ) : (
+              <>
+                <span>Reset Password</span>
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
 
