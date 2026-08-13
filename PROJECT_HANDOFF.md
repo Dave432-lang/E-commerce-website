@@ -275,8 +275,9 @@ ecommerce-boutique/
 - [x] **Email Notification System:** Integrated Nodemailer `emailService.js` with HTML templates for password reset links and order confirmation receipts (with dev console fallback).
 - [x] **Customer Product Reviews & Ratings:** Created `reviews` table, `reviewController.js`, `reviewService.js`, and interactive review submit & list component in `ProductDetails.jsx`.
 - [x] **Inventory & Stock Tracking:** Added `stock_quantity` column, stock management in `Admin/Product.jsx`, and stock state with "Out of Stock" / "Low Stock" UI badges in `ProductDetails.jsx`.
-- [x] **Automated Testing Suite:** Implemented Jest & Supertest unit/integration test suite (`server/tests/auth.test.js`, `products.test.js`, `reviews.test.js`). 8/8 tests passing.
+- [x] **Automated Testing Suite:** Implemented Jest & Supertest unit/integration test suite (`server/tests/auth.test.js`, `products.test.js`, `reviews.test.js`, `coupons.test.js`). 11/11 tests passing.
 - [x] **Dockerization & Container Setup:** Added backend `server/Dockerfile`, frontend multi-stage Nginx `client/Dockerfile`, and multi-container orchestration via `docker-compose.yml`.
+- [x] **Promo Codes & Discount Coupon System:** Added `coupons` table in MySQL, validation endpoint `POST /api/coupons/validate`, frontend `couponService.js`, and checkout summary integration with instant discount calculation (`WELCOME10`, `BOUTIQUE20`, `SAVE15`).
 - [ ] **Deployment & CI/CD Pipeline:** Set up automated CI/CD deployment pipeline to production hosting (e.g. Render/Railway for backend, Vercel/Netlify for frontend, PlanetScale/Aiven for MySQL).
 
 ---
