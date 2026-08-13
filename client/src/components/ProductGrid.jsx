@@ -9,7 +9,7 @@ const ProductGrid = ({ title, products }) => {
     <div className="product-section">
       <div className="section-header">
         <h2 className="section-title">{title}</h2>
-        <a href="#" className="view-all-link">View All Products</a>
+        <Link to="/shop" className="view-all-link">View All Products</Link>
       </div>
       
       <div className="product-grid">

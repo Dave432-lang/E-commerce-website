@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { FaInstagram, FaTwitter, FaFacebook } from 'react-icons/fa';
 
@@ -9,35 +10,35 @@ const Footer = () => {
         <div className="footer-grid">
           {/* Brand Info */}
           <div className="footer-brand">
-            <div className="navbar-logo" style={{ marginBottom: '1rem' }}>
+            <Link to="/" className="navbar-logo" style={{ marginBottom: '1rem', textDecoration: 'none' }}>
               <ShoppingBag className="icon-primary" size={28} />
               <span className="logo-text">Boutique</span>
-            </div>
+            </Link>
             <p className="footer-description">
               Elevating everyday aesthetics. Premium quality clothing designed for the modern individual.
             </p>
             <div className="social-links">
-              <a href="#" className="social-icon"><FaInstagram size={20} /></a>
-              <a href="#" className="social-icon"><FaTwitter size={20} /></a>
-              <a href="#" className="social-icon"><FaFacebook size={20} /></a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram"><FaInstagram size={18} /></a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Twitter"><FaTwitter size={18} /></a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Facebook"><FaFacebook size={18} /></a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="footer-links-col">
             <h4 className="footer-heading">Shop</h4>
-            <a href="#" className="footer-link">New Arrivals</a>
-            <a href="#" className="footer-link">Best Sellers</a>
-            <a href="#" className="footer-link">Sale</a>
-            <a href="#" className="footer-link">Collections</a>
+            <Link to="/shop" className="footer-link">New Arrivals</Link>
+            <Link to="/shop" className="footer-link">Best Sellers</Link>
+            <Link to="/shop" className="footer-link">Sale</Link>
+            <Link to="/shop" className="footer-link">Collections</Link>
           </div>
 
           <div className="footer-links-col">
             <h4 className="footer-heading">Help</h4>
-            <a href="#" className="footer-link">FAQ</a>
-            <a href="#" className="footer-link">Shipping & Returns</a>
-            <a href="#" className="footer-link">Track Order</a>
-            <a href="#" className="footer-link">Contact Us</a>
+            <Link to="/about" className="footer-link">FAQ</Link>
+            <Link to="/about" className="footer-link">Shipping & Returns</Link>
+            <Link to="/about" className="footer-link">Track Order</Link>
+            <Link to="/about" className="footer-link">Contact Us</Link>
           </div>
 
           {/* Newsletter */}
@@ -46,9 +47,9 @@ const Footer = () => {
             <p className="footer-description" style={{ marginBottom: '1rem' }}>
               Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.
             </p>
-            <form className="newsletter-form">
-              <input type="email" placeholder="Enter your email" className="newsletter-input" />
-              <button type="submit" className="newsletter-btn">
+            <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
+              <input type="email" placeholder="Enter your email" className="newsletter-input" required />
+              <button type="submit" className="newsletter-btn" aria-label="Subscribe">
                 <ArrowRight size={18} />
               </button>
             </form>
@@ -58,8 +59,8 @@ const Footer = () => {
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} Boutique. All rights reserved.</p>
           <div className="footer-bottom-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+            <Link to="/about">Privacy Policy</Link>
+            <Link to="/about">Terms of Service</Link>
           </div>
         </div>
       </div>
