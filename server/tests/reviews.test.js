@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { app } from '../server.js';
+import { initDbPromise } from '../config/db.js';
 
 describe('Reviews API Endpoints', () => {
+  beforeAll(async () => {
+    await initDbPromise;
+  });
   it('GET /api/reviews/product/:productId should return review array', async () => {
     const res = await request(app).get('/api/reviews/product/1');
     expect(res.statusCode).toEqual(200);

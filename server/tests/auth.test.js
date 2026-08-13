@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { app } from '../server.js';
+import { initDbPromise } from '../config/db.js';
 
 describe('Auth API Endpoints', () => {
+  beforeAll(async () => {
+    await initDbPromise;
+  });
   it('GET / should return API running message', async () => {
     const res = await request(app).get('/');
     expect(res.statusCode).toEqual(200);

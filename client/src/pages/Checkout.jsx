@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
+import { couponService } from '../services/couponService';
 import { 
   ChevronRight, 
   MapPin, 
@@ -13,7 +14,8 @@ import {
   ShoppingBag,
   Truck,
   ShieldCheck,
-  Loader2
+  Loader2,
+  Tag
 } from 'lucide-react';
 
 const Checkout = () => {
@@ -27,6 +29,15 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const finalTotal = appliedCoupon ? appliedCoupon.newTotal : cartTotal;
+
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
     lastName: user?.name?.split(' ')[1] || '',
@@ -47,6 +58,26 @@ const Checkout = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+
+    setIsValidatingCoupon(true);
+    setCouponError('');
+    setCouponSuccess('');
+
+    try {
+      const res = await couponService.validateCoupon(couponInput, cartTotal);
+      setAppliedCoupon(res);
+      setCouponSuccess(res.message);
+    } catch (err) {
+      setCouponError(err.message || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
   };
 
   const nextStep = () => {
@@ -79,11 +110,13 @@ const Checkout = () => {
       const handler = window.PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d3c3332152861c8a514d7a8f15d22bf5716dfbc2',
         email: formData.email,
-        amount: Math.round(cartTotal * 100), // Minor units, GHS pesewas. Free shipping applied ($0 shipping!)
-        currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo) out-of-the-box!
+        amount: Math.round(finalTotal * 100), // Minor units, GHS pesewas.
+        currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo)
         ref: 'BTQ-' + Math.floor(Math.random() * 1000000000 + 1),
         metadata: {
           userId: user.id,
+          couponCode: appliedCoupon ? appliedCoupon.code : null,
+          discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0,
           shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
           items: cartItems.map(item => ({
             id: item.id,
@@ -99,7 +132,6 @@ const Checkout = () => {
           setError('Payment cancelled by user.');
         },
         callback: async (response) => {
-          // Payment succeeded, now verify on backend and create order in MySQL
           try {
             const orderResponse = await orderService.createOrder({
               items: cartItems.map(item => ({
@@ -110,16 +142,15 @@ const Checkout = () => {
                 size: item.size,
                 color: item.color
               })),
-              totalAmount: cartTotal, // Free shipping ($0)
+              totalAmount: finalTotal,
               shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
               paymentReference: response.reference,
               paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
             });
 
-            // Set final success state
             setCreatedOrderId(orderResponse.orderId);
             setIsOrderPlaced(true);
-            setCartItems([]); // Clear local cart
+            setCartItems([]);
           } catch (err) {
             console.error('Order Submission Error:', err);
             setError(err.message || 'Payment verified, but saving your order to database failed. Please contact support.');
@@ -290,7 +321,7 @@ const Checkout = () => {
                     {isSubmitting ? (
                       <><Loader2 className="animate-spin" size={18} /> Verifying Transaction...</>
                     ) : (
-                      <>Pay securely with Paystack (${cartTotal.toFixed(2)})</>
+                      <>Pay securely with Paystack (${finalTotal.toFixed(2)})</>
                     )}
                   </button>
                 </div>
@@ -317,18 +348,56 @@ const Checkout = () => {
               ))}
             </div>
 
-            <div className="summary-totals">
+            {/* Promo Code Form */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
+              <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Promo Code (e.g. WELCOME10)"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase'
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="btn-secondary"
+                  disabled={isValidatingCoupon || !couponInput.trim()}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  {isValidatingCoupon ? '...' : 'Apply'}
+                </button>
+              </form>
+              {couponError && <p style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.35rem' }}>{couponError}</p>}
+              {couponSuccess && <p style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '0.35rem' }}>{couponSuccess}</p>}
+            </div>
+
+            <div className="summary-totals" style={{ marginTop: '1rem' }}>
               <div className="summary-row">
                 <span>Subtotal</span>
                 <span>${cartTotal.toFixed(2)}</span>
               </div>
+              {appliedCoupon && (
+                <div className="summary-row" style={{ color: '#16a34a', fontWeight: 600 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <Tag size={14} /> Coupon ({appliedCoupon.code})
+                  </span>
+                  <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="summary-row">
                 <span>Shipping</span>
                 <span className="free-shipping-text" style={{ color: '#10b981', fontWeight: 600 }}>Free</span>
               </div>
               <div className="summary-row total">
                 <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>${finalTotal.toFixed(2)}</span>
               </div>
             </div>
 

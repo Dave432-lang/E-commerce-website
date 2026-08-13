@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { app } from '../server.js';
+import { initDbPromise } from '../config/db.js';
 
 describe('Product Catalog API Endpoints', () => {
+  beforeAll(async () => {
+    await initDbPromise;
+  });
   it('GET /api/products should return a list of non-archived products', async () => {
     const res = await request(app).get('/api/products');
     expect(res.statusCode).toEqual(200);

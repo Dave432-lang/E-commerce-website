@@ -104,7 +104,32 @@ const runMigrations = async () => {
     `);
     console.log('Successfully verified reviews table exists in database.');
 
-    // 6. Update admin user seed password hash (to standard 'admin123') if it has placeholder
+    // 6. Create coupons table for promotional discounts
+    await query(`
+      CREATE TABLE IF NOT EXISTS coupons (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        discount_percent INT NOT NULL CHECK (discount_percent BETWEEN 1 AND 100),
+        min_order_amount DECIMAL(10, 2) DEFAULT 0.00,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB;
+    `);
+    console.log('Successfully verified coupons table exists in database.');
+
+    // Seed default coupons if none exist
+    const existingCoupons = await query('SELECT COUNT(*) as count FROM coupons');
+    if (existingCoupons[0].count === 0) {
+      await query(`
+        INSERT INTO coupons (code, discount_percent, min_order_amount) VALUES
+        ('WELCOME10', 10, 0.00),
+        ('BOUTIQUE20', 20, 50.00),
+        ('SAVE15', 15, 30.00)
+      `);
+      console.log('Successfully seeded default promo coupons (WELCOME10, BOUTIQUE20, SAVE15).');
+    }
+
+    // 7. Update admin user seed password hash (to standard 'admin123') if it has placeholder
     await query(`
       UPDATE users 
       SET password_hash = '$2a$10$tZ8.sM1M7l67yA.E1P3FteS.J8L2F250nZ0Uf.n2e.32l42o3FbeW' 
@@ -115,4 +140,4 @@ const runMigrations = async () => {
   }
 };
 
-runMigrations();
+export const initDbPromise = runMigrations();

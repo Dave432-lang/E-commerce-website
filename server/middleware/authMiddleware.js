@@ -35,7 +35,6 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Middleware to restrict access to specific roles (e.g. admin)
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -44,3 +43,5 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+export const admin = authorize('admin');
