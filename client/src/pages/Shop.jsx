@@ -1,10 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ProductGrid from '../components/ProductGrid';
-import ProductFilters from '../components/ProductFilters';
-import Loader from '../components/Loader/Loader';
-import { productService } from '../services/productService';
-
-import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductGrid from '../components/ProductGrid';
 import ProductFilters from '../components/ProductFilters';
