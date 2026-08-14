@@ -97,6 +97,126 @@ export const SAMPLE_PRODUCTS = [
     colors: ['Navy', 'Olive', 'White'],
     rating: 4.75,
     reviews_count: 28
+  },
+  {
+    id: 9,
+    name: 'Structured Blazer Dress',
+    description: 'Double-breasted blazer dress with sharp shoulders, peak lapels, and custom gold crest buttons.',
+    price: 285.00,
+    category: 'Dresses',
+    image_url: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&auto=format&fit=crop&q=80',
+    sizes: ['XS', 'S', 'M', 'L'],
+    colors: ['Black', 'White'],
+    rating: 4.9,
+    reviews_count: 45
+  },
+  {
+    id: 10,
+    name: 'Italian Leather Ankle Boots',
+    description: 'Handcrafted Italian calfskin ankle boots featuring a sleek pointed toe and 65mm block heel.',
+    price: 320.00,
+    category: 'Accessories',
+    image_url: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800&auto=format&fit=crop&q=80',
+    sizes: ['37', '38', '39', '40', '41'],
+    colors: ['Black', 'Brown'],
+    rating: 4.95,
+    reviews_count: 58
+  },
+  {
+    id: 11,
+    name: 'Classic Vintage Denim Jacket',
+    description: 'Heavyweight organic cotton denim jacket with authentic washed treatment and metal button closure.',
+    price: 175.00,
+    category: 'Outerwear',
+    image_url: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Blue', 'Black'],
+    rating: 4.8,
+    reviews_count: 33
+  },
+  {
+    id: 12,
+    name: 'Linen Summer Button-Down',
+    description: 'Breathable 100% French linen shirt tailored for effortless resort wear and warm climates.',
+    price: 110.00,
+    category: 'Shirts',
+    image_url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['White', 'Beige', 'Blue'],
+    rating: 4.7,
+    reviews_count: 22
+  },
+  {
+    id: 13,
+    name: 'Satin A-Line Midi Skirt',
+    description: 'Luxurious bias-cut satin midi skirt featuring an elastic waistband and glossy fluid movement.',
+    price: 125.00,
+    category: 'Bottoms',
+    image_url: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
+    sizes: ['XS', 'S', 'M', 'L'],
+    colors: ['Black', 'Beige', 'Navy'],
+    rating: 4.85,
+    reviews_count: 41
+  },
+  {
+    id: 14,
+    name: 'Velvet Evening Tuxedo Blazer',
+    description: 'Plush cotton velvet tuxedo jacket with satin shawl lapels and silk lining for gala evenings.',
+    price: 410.00,
+    category: 'Outerwear',
+    image_url: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Black', 'Navy'],
+    rating: 5.0,
+    reviews_count: 18
+  },
+  {
+    id: 15,
+    name: 'Ribbed Cotton Tank Top',
+    description: 'Essential fitted tank top knit from stretch organic ribbed cotton with high neck styling.',
+    price: 65.00,
+    category: 'Tops',
+    image_url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
+    sizes: ['XS', 'S', 'M', 'L'],
+    colors: ['White', 'Black', 'Olive'],
+    rating: 4.6,
+    reviews_count: 14
+  },
+  {
+    id: 16,
+    name: 'Pleated Chiffon Maxi Dress',
+    description: 'Floating sunray pleated chiffon gown with delicate spaghetti straps and cinched waistline.',
+    price: 260.00,
+    category: 'Dresses',
+    image_url: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L'],
+    colors: ['Navy', 'White', 'Beige'],
+    rating: 4.9,
+    reviews_count: 29
+  },
+  {
+    id: 17,
+    name: 'Designer Leather Waist Belt',
+    description: 'Polished calfskin belt with signature geometric brass buckle and hand-stitched edges.',
+    price: 85.00,
+    category: 'Accessories',
+    image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L'],
+    colors: ['Black', 'Brown'],
+    rating: 4.8,
+    reviews_count: 36
+  },
+  {
+    id: 18,
+    name: 'Chunky Cable Knit Cardigan',
+    description: 'Heavyweight hand-knit cardigan sweater featuring horn buttons and deep front patch pockets.',
+    price: 195.00,
+    category: 'Knitwear',
+    image_url: 'https://images.unsplash.com/photo-1434389678369-18361fc474cc?w=800&auto=format&fit=crop&q=80',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Beige', 'White', 'Olive'],
+    rating: 4.9,
+    reviews_count: 47
   }
 ];
 
