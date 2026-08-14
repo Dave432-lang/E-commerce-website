@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Search, User, Menu, X } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, Sun, Moon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,16 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [products, setProducts] = useState([]);
+  const [theme, setTheme] = useState(() => localStorage.getItem('boutique_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('boutique_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   useEffect(() => {
     const fetchSearchProducts = async () => {
@@ -136,6 +146,14 @@ const Navbar = () => {
               <User size={22} />
             </Link>
           )}
+
+          <button 
+            className="icon-btn theme-toggle-btn" 
+            onClick={toggleTheme} 
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          >
+            {theme === 'dark' ? <Sun size={20} className="icon-warning" /> : <Moon size={20} />}
+          </button>
 
           <button className="icon-btn cart-btn" onClick={() => navigate('/cart')}>
             <ShoppingBag size={22} />
