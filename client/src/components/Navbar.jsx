@@ -107,7 +107,7 @@ const Navbar = () => {
                             <img src={product.image} alt={product.name} />
                             <div className="item-details">
                               <p className="item-name">{product.name}</p>
-                              <p className="item-price">${product.price}</p>
+                              <p className="item-price">GH₵{product.price}</p>
                             </div>
                           </Link>
                         ))}

@@ -108,7 +108,7 @@ const Cart = () => {
                         <Plus size={14} />
                       </button>
                     </div>
-                    <p style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                    <p style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>GH₵{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -133,7 +133,7 @@ const Cart = () => {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '1rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>${cartTotal.toFixed(2)}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text)' }}>GH₵{cartTotal.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '1rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Delivery</span>
@@ -150,7 +150,7 @@ const Cart = () => {
                 }}
               >
                 <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text)' }}>Total</span>
-                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary)' }}>${cartTotal.toFixed(2)}</span>
+                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary)' }}>GH₵{cartTotal.toFixed(2)}</span>
               </div>
 
               <button 

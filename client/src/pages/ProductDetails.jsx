@@ -204,7 +204,7 @@ const ProductDetails = () => {
             <span>{product.rating} Rating ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
           </div>
 
-          <p className="product-details-price">${Number(product.price).toFixed(2)}</p>
+          <p className="product-details-price">GH₵{Number(product.price).toFixed(2)}</p>
 
           <p className="product-details-description">
             {product.description || `Experience the perfect blend of comfort and premium aesthetics with this signature piece. 
@@ -434,7 +434,7 @@ const ProductDetails = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '0.75rem' }}>
                       <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)' }}>
-                        ${Number(relItem.price).toFixed(2)}
+                        GH₵{Number(relItem.price).toFixed(2)}
                       </span>
                       <button 
                         onClick={(e) => {

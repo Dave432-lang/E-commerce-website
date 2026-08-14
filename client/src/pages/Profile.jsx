@@ -28,8 +28,8 @@ const Profile = () => {
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name} (${item.size || 'M'}, ${item.color || 'Default'})</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.price).toFixed(2)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">GH₵${Number(item.price).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">GH₵${(item.price * item.quantity).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -84,7 +84,7 @@ const Profile = () => {
             </tbody>
           </table>
           <div class="total">
-            Total Paid: $${Number(order.total).toFixed(2)}
+            Total Paid: GH₵${Number(order.total).toFixed(2)}
           </div>
           <script>
             window.onload = function() { window.print(); }
@@ -254,7 +254,7 @@ const Profile = () => {
                         </div>
                         <div className="order-info-group">
                           <span className="label">Total</span>
-                          <span className="value">${order.total.toFixed(2)}</span>
+                          <span className="value">GH₵{order.total.toFixed(2)}</span>
                         </div>
                         <div className={`order-status-badge status-${order.status?.toLowerCase()}`}>
                           {order.status}
@@ -316,7 +316,7 @@ const Profile = () => {
                       </div>
                       <div className="wishlist-item-info">
                         <h3>{item.name}</h3>
-                        <p className="wishlist-price">${item.price.toFixed(2)}</p>
+                        <p className="wishlist-price">GH₵{item.price.toFixed(2)}</p>
                         <button
                           className="btn-primary btn-small"
                           onClick={() => handleAddWishlistItemToCart(item)}

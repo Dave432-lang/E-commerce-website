@@ -78,7 +78,7 @@ const CartDrawer = () => {
                           <Plus size={14} />
                         </button>
                       </div>
-                      <p className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="cart-item-price">GH₵{(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -90,7 +90,7 @@ const CartDrawer = () => {
         <div className="cart-footer">
           <div className="cart-subtotal">
             <span>Subtotal</span>
-            <span>${cartTotal.toFixed(2)}</span>
+            <span>GH₵{cartTotal.toFixed(2)}</span>
           </div>
           <p className="cart-tax-note">Taxes and delivery calculated at checkout</p>
           <button className="btn-primary checkout-btn" disabled={cartItems.length === 0} onClick={handleCheckout}>

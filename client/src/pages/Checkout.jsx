@@ -321,7 +321,7 @@ const Checkout = () => {
                     {isSubmitting ? (
                       <><Loader2 className="animate-spin" size={18} /> Verifying Transaction...</>
                     ) : (
-                      <>Pay securely with Paystack (${finalTotal.toFixed(2)})</>
+                      <>Pay securely with Paystack (GH₵{finalTotal.toFixed(2)})</>
                     )}
                   </button>
                 </div>
@@ -342,7 +342,7 @@ const Checkout = () => {
                   <div className="summary-item-info">
                     <p className="item-name">{item.name}</p>
                     <p className="item-meta">Size: {item.size} | Qty: {item.quantity}</p>
-                    <p className="item-price">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="item-price">GH₵{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -381,14 +381,14 @@ const Checkout = () => {
             <div className="summary-totals" style={{ marginTop: '1rem' }}>
               <div className="summary-row">
                 <span>Subtotal</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>GH₵{cartTotal.toFixed(2)}</span>
               </div>
               {appliedCoupon && (
                 <div className="summary-row" style={{ color: '#16a34a', fontWeight: 600 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <Tag size={14} /> Coupon ({appliedCoupon.code})
                   </span>
-                  <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                  <span>-GH₵{appliedCoupon.discountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="summary-row">
@@ -397,7 +397,7 @@ const Checkout = () => {
               </div>
               <div className="summary-row total">
                 <span>Total</span>
-                <span>${finalTotal.toFixed(2)}</span>
+                <span>GH₵{finalTotal.toFixed(2)}</span>
               </div>
             </div>
 

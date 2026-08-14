@@ -106,7 +106,7 @@ const Orders = () => {
                           </div>
                         </td>
                         <td>{order.date}</td>
-                        <td><b>${Number(order.total).toFixed(2)}</b></td>
+                        <td><b>GH₵{Number(order.total).toFixed(2)}</b></td>
                         <td>
                           <span className={`status-badge badge-${order.status?.toLowerCase()}`}>
                             {order.status}
@@ -145,8 +145,8 @@ const Orders = () => {
                                           <p className="item-meta">Size: {item.size} | Color: {item.color || 'Default'} | Qty: {item.quantity}</p>
                                         </div>
                                         <div className="item-detail-price">
-                                          <span>${(item.price * item.quantity).toFixed(2)}</span>
-                                          <p className="item-price-unit">${item.price.toFixed(2)} each</p>
+                                          <span>GH₵{(item.price * item.quantity).toFixed(2)}</span>
+                                          <p className="item-price-unit">GH₵{item.price.toFixed(2)} each</p>
                                         </div>
                                       </div>
                                     ))}

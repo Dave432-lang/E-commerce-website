@@ -128,7 +128,7 @@ const Coupons = () => {
             />
           </div>
           <div className="form-group" style={{ flex: 1 }}>
-            <label>Min Spend ($)</label>
+            <label>Min Spend (GH₵)</label>
             <input
               type="number"
               min="0"
@@ -171,7 +171,7 @@ const Coupons = () => {
                       <span className="order-id-label" style={{ fontSize: '0.95rem' }}>{c.code}</span>
                     </td>
                     <td><b>{c.discount_percent}% OFF</b></td>
-                    <td>{c.min_spend > 0 ? `$${Number(c.min_spend).toFixed(2)}` : 'No Minimum'}</td>
+                    <td>{c.min_spend > 0 ? `GH₵${Number(c.min_spend).toFixed(2)}` : 'No Minimum'}</td>
                     <td>{new Date(c.created_at || Date.now()).toLocaleDateString()}</td>
                     <td>
                       <div className="table-actions">

@@ -45,7 +45,7 @@ const ProductFilters = ({
 
       <div className="filter-group">
         <h3>Price Range</h3>
-        <p className="price-label">Up to ${priceRange}</p>
+        <p className="price-label">Up to GH₵{priceRange}</p>
         <input 
           type="range" 
           min="0" 

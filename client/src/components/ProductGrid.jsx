@@ -37,7 +37,7 @@ const ProductGrid = ({ title, products }) => {
                 </div>
               </div>
               <h3 className="product-name">{product.name}</h3>
-              <p className="product-price">${product.price.toFixed(2)}</p>
+              <p className="product-price">GH₵{product.price.toFixed(2)}</p>
             </div>
           </Link>
         ))}

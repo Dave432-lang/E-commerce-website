@@ -323,7 +323,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-card-info">
             <span className="stat-label">Total Revenue</span>
-            <h3 className="stat-value">${Number(totalSales).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
+            <h3 className="stat-value">GH₵{Number(totalSales).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
           </div>
         </div>
 
@@ -353,7 +353,7 @@ const Dashboard = () => {
           </div>
           <div className="stat-card-info">
             <span className="stat-label">Average Order Value</span>
-            <h3 className="stat-value">${Number(averageOrderValue).toFixed(2)}</h3>
+            <h3 className="stat-value">GH₵{Number(averageOrderValue).toFixed(2)}</h3>
           </div>
         </div>
       </div>
@@ -402,7 +402,7 @@ const Dashboard = () => {
                       <td><span className="order-id-label">{order.id}</span></td>
                       <td>{order.customerName}</td>
                       <td>{order.date}</td>
-                      <td>${Number(order.total).toFixed(2)}</td>
+                      <td>GH₵{Number(order.total).toFixed(2)}</td>
                       <td>
                         <span className={`status-badge badge-${order.status?.toLowerCase()}`}>
                           {order.status}

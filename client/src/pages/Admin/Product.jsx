@@ -212,7 +212,7 @@ const Product = () => {
                         </div>
                       </td>
                       <td><span className="category-tag">{product.category}</span></td>
-                      <td><b>${Number(product.price).toFixed(2)}</b></td>
+                      <td><b>GH₵{Number(product.price).toFixed(2)}</b></td>
                       <td>
                         <span style={{ 
                           fontWeight: 600, 
@@ -305,7 +305,7 @@ const Product = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Price ($ USD) <span className="text-danger">*</span></label>
+                    <label>Price (GH₵ GHS) <span className="text-danger">*</span></label>
                     <input 
                       name="price" 
                       type="number" 
