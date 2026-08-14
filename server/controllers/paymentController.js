@@ -72,6 +72,11 @@ export const handlePaystackWebhook = async (req, res) => {
       } catch (transactionError) {
         await conn.rollback();
         conn.release();
+
+        if (transactionError.code === 'ER_DUP_ENTRY' || transactionError.errno === 1062) {
+          console.log(`Webhook order for reference ${reference} already created concurrently. Returning success.`);
+          return res.status(200).json({ status: 'success', message: 'Order already processed' });
+        }
         throw transactionError;
       }
     } catch (dbError) {

@@ -6,75 +6,132 @@ import { emailService } from '../services/emailService.js';
 // @route   POST /api/orders
 // @access  Private
 export const createOrder = async (req, res) => {
-  const { items, totalAmount, shippingAddress, paymentReference, paymentMethod } = req.body;
+  const { items, couponCode, shippingAddress, paymentReference, paymentMethod } = req.body;
 
-  if (!items || items.length === 0 || !totalAmount || !shippingAddress || !paymentReference) {
-    return res.status(400).json({ message: 'Missing order details, shipping address, or payment reference' });
+  if (!items || !Array.isArray(items) || items.length === 0 || !shippingAddress || !paymentReference) {
+    return res.status(400).json({ message: 'Missing order items, shipping address, or payment reference' });
   }
 
   try {
-    // Check if duplicate order exists (already processed via webhook)
-    const existingOrder = await query('SELECT id FROM orders WHERE payment_reference = ?', [paymentReference]);
+    // 1. Check if order with this payment_reference already exists (Idempotency Pre-Check)
+    const existingOrder = await query('SELECT id, total_amount FROM orders WHERE payment_reference = ?', [paymentReference]);
     if (existingOrder.length > 0) {
-      console.log(`Order with payment reference ${paymentReference} already processed via webhook.`);
-      return res.status(201).json({
-        message: 'Order created successfully (webhook)',
+      console.log(`Order with payment reference ${paymentReference} already exists. Returning existing order.`);
+      return res.status(200).json({
+        message: 'Order already processed',
         orderId: `BTQ-${existingOrder[0].id}`,
-        total: totalAmount
+        total: Number(existingOrder[0].total_amount)
       });
     }
 
-    // 1. Verify payment with Paystack
+    // 2. Authoritative Server-Side Price & Quantity Validation
+    let calculatedTotal = 0;
+    const verifiedItems = [];
+
+    for (const item of items) {
+      const productId = Number(item.id);
+      const qty = Number(item.quantity);
+
+      if (!productId || isNaN(productId) || !qty || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+        return res.status(400).json({ message: 'Invalid product item or quantity in order request' });
+      }
+
+      // Query real price and stock from database
+      const prodRows = await query(
+        'SELECT id, name, price, stock_quantity, is_archived FROM products WHERE id = ?',
+        [productId]
+      );
+
+      if (!prodRows || prodRows.length === 0 || prodRows[0].is_archived) {
+        return res.status(400).json({ message: `Product #${productId} is currently unavailable` });
+      }
+
+      const dbProduct = prodRows[0];
+      const dbPrice = Number(dbProduct.price);
+      const lineTotal = dbPrice * qty;
+      calculatedTotal += lineTotal;
+
+      verifiedItems.push({
+        id: dbProduct.id,
+        name: dbProduct.name,
+        price: dbPrice, // Strict DB price
+        quantity: qty,
+        size: item.size || 'M',
+        color: item.color || 'Default'
+      });
+    }
+
+    // 3. Apply Coupon Code Discount Server-Side if Provided
+    if (couponCode) {
+      const couponRows = await query(
+        'SELECT discount_percent, min_order_amount FROM coupons WHERE code = ? AND is_active = 1',
+        [couponCode]
+      );
+      if (couponRows && couponRows.length > 0) {
+        const coupon = couponRows[0];
+        if (calculatedTotal >= Number(coupon.min_order_amount)) {
+          const discount = (calculatedTotal * Number(coupon.discount_percent)) / 100;
+          calculatedTotal -= discount;
+        }
+      }
+    }
+
+    calculatedTotal = Math.round(calculatedTotal * 100) / 100;
+
+    // 4. Verify Payment with Paystack REST API
     const paystackData = await paymentService.verifyTransaction(paymentReference);
 
     if (!paystackData.status || paystackData.data.status !== 'success') {
       return res.status(400).json({ message: 'Paystack payment verification failed' });
     }
 
-    // Verify paid amount matches (Paystack amount is in minor units: kobo/pesewas, i.e. cents)
+    // Convert Paystack minor units (pesewas/cents) to main decimal currency
     const paidAmount = paystackData.data.amount / 100;
-    
-    // Check if the difference is larger than 0.05
-    if (Math.abs(paidAmount - totalAmount) > 0.05) {
-      return res.status(400).json({ message: `Payment amount mismatch. Expected: ${totalAmount}, Paid: ${paidAmount}` });
+
+    // Validate paid amount strictly against server-calculated DB total
+    if (Math.abs(paidAmount - calculatedTotal) > 0.05) {
+      console.error(`PRICE MANIPULATION DETECTED! Paid: ${paidAmount}, Server Calculated Required: ${calculatedTotal}`);
+      return res.status(400).json({
+        message: `Payment verification error: Paid amount (GH₵${paidAmount.toFixed(2)}) does not match required order total (GH₵${calculatedTotal.toFixed(2)})`
+      });
     }
 
-    // 2. Insert order and items using a single transaction
+    // 5. Database Order Write & Stock Decrement Transaction
     const conn = await pool.getConnection();
     await conn.beginTransaction();
 
     try {
-      // Stock Availability Verification
-      for (const item of items) {
-        const [prodRows] = await conn.execute(
+      // Stock Verification with FOR UPDATE Lock
+      for (const item of verifiedItems) {
+        const [stockCheck] = await conn.execute(
           'SELECT name, stock_quantity FROM products WHERE id = ? FOR UPDATE',
           [item.id]
         );
-        if (prodRows && prodRows.length > 0) {
-          const currentStock = prodRows[0].stock_quantity;
-          if (currentStock < item.quantity) {
+        if (stockCheck && stockCheck.length > 0) {
+          const availableStock = stockCheck[0].stock_quantity;
+          if (availableStock < item.quantity) {
             await conn.rollback();
             conn.release();
             return res.status(400).json({
-              message: `Insufficient stock for "${prodRows[0].name}". Available stock: ${currentStock}`
+              message: `Insufficient stock for "${stockCheck[0].name}". Available: ${availableStock}`
             });
           }
         }
       }
 
-      // Insert into orders table including payment_reference
+      // Insert Order
       const [orderResult] = await conn.execute(
         'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, payment_reference) VALUES (?, ?, ?, ?, ?, ?)',
-        [req.user.id, totalAmount, 'Processing', shippingAddress, paymentMethod || 'Paystack (Card/Momo)', paymentReference]
+        [req.user.id, calculatedTotal, 'Processing', shippingAddress, paymentMethod || 'Paystack (Card/Momo)', paymentReference]
       );
-      
+
       const orderId = orderResult.insertId;
 
-      // Insert into order_items table and decrement stock atomically for each item
-      for (const item of items) {
+      // Insert Order Items and Decrement Stock
+      for (const item of verifiedItems) {
         await conn.execute(
           'INSERT INTO order_items (order_id, product_id, quantity, selected_size, selected_color, price_at_time) VALUES (?, ?, ?, ?, ?, ?)',
-          [orderId, item.id, item.quantity, item.size || 'M', item.color || 'Default', item.price]
+          [orderId, item.id, item.quantity, item.size, item.color, item.price]
         );
 
         await conn.execute(
@@ -86,11 +143,11 @@ export const createOrder = async (req, res) => {
       await conn.commit();
       conn.release();
 
-      // Trigger order confirmation email asynchronously
+      // Send Order Confirmation Email
       emailService.sendOrderConfirmationEmail(req.user.email, req.user.name, {
         id: orderId,
-        total_price: totalAmount,
-        items,
+        total_price: calculatedTotal,
+        items: verifiedItems,
         shipping_address: shippingAddress,
         payment_method: paymentMethod || 'Paystack (Card/Momo)'
       });
@@ -98,11 +155,24 @@ export const createOrder = async (req, res) => {
       res.status(201).json({
         message: 'Order created successfully',
         orderId: `BTQ-${orderId}`,
-        total: totalAmount
+        total: calculatedTotal
       });
     } catch (transactionError) {
       await conn.rollback();
       conn.release();
+
+      // Gracefully handle ER_DUP_ENTRY when webhook races with frontend request
+      if (transactionError.code === 'ER_DUP_ENTRY' || transactionError.errno === 1062) {
+        console.warn(`Duplicate payment_reference ${paymentReference} caught during transaction. Returning existing order.`);
+        const existing = await query('SELECT id, total_amount FROM orders WHERE payment_reference = ?', [paymentReference]);
+        if (existing.length > 0) {
+          return res.status(200).json({
+            message: 'Order already processed',
+            orderId: `BTQ-${existing[0].id}`,
+            total: Number(existing[0].total_amount)
+          });
+        }
+      }
       throw transactionError;
     }
   } catch (error) {
