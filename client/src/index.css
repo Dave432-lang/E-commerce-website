@@ -3449,4 +3449,227 @@ body {
   }
 }
 
+/* ==========================================
+   UNIVERSAL MULTI-DEVICE RESPONSIVENESS SUITE
+   ========================================== */
+
+/* 1. Ultra-Wide & Large Displays (>= 1440px) */
+@media (min-width: 1440px) {
+  .product-section, .shop-container, .cart-page-container, .checkout-container, .admin-dashboard-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .admin-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* 2. Laptops & Standard Displays (1024px - 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 3. Tablets & iPads (768px - 1023px) */
+@media (max-width: 1023px) {
+  /* Navigation & Header */
+  .navbar-container {
+    padding: 0 1.5rem;
+  }
+  .nav-links {
+    gap: 1.25rem;
+  }
+
+  /* Shop Layout */
+  .shop-layout {
+    grid-template-columns: 1fr;
+  }
+  .shop-sidebar {
+    position: static;
+    margin-bottom: 2rem;
+  }
+
+  /* Product Details Page */
+  .product-details-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+
+  /* Checkout Page Layout */
+  .checkout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+  }
+  .checkout-sidebar {
+    position: static !important;
+  }
+
+  /* Cart Page */
+  .cart-page-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Profile Layout */
+  .profile-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .profile-sidebar {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .sidebar-link {
+    white-space: nowrap;
+  }
+
+  /* Admin Section */
+  .admin-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .admin-sidebar {
+    display: none; /* Controlled by mobile toggle */
+  }
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 4. Mobile Landscape & Medium Mobile (481px - 767px) */
+@media (max-width: 767px) {
+  /* Hero Section */
+  .hero-content h1 {
+    font-size: 2.5rem !important;
+    line-height: 1.15 !important;
+  }
+  .hero-content p {
+    font-size: 1rem !important;
+  }
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .hero-actions .btn-primary, .hero-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Product Cards & Grid */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  .product-card-info h3 {
+    font-size: 0.95rem;
+  }
+
+  /* Cart Drawer */
+  .cart-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Modals */
+  .modal-container {
+    width: 95% !important;
+    max-height: 90vh !important;
+    padding: 1.25rem !important;
+    margin: 0 10px;
+  }
+
+  /* Admin Stats */
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form Layouts */
+  .form-row {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  .form-group {
+    width: 100% !important;
+  }
+
+  /* Admin Tables Scrollability */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-table {
+    min-width: 600px;
+  }
+}
+
+/* 5. Small Mobile Portrait (< 480px) */
+@media (max-width: 480px) {
+  /* Global Spacing */
+  body {
+    font-size: 14px;
+  }
+  .product-section, .shop-container, .cart-page-container, .checkout-container, .admin-dashboard-page {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Navbar */
+  .navbar-logo {
+    font-size: 1.25rem !important;
+  }
+  .nav-actions {
+    gap: 0.5rem !important;
+  }
+  .icon-btn {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  /* Single Column Product Grid for Ultra Small Screens */
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stepper Bar for Checkout */
+  .checkout-stepper {
+    gap: 0.5rem !important;
+  }
+  .step-label {
+    display: none; /* Hide text label on tiny screens, show step number */
+  }
+
+  /* Buttons & Tap Targets */
+  .btn-primary, .btn-secondary {
+    padding: 0.75rem 1.25rem !important;
+    font-size: 0.9rem !important;
+    min-height: 44px; /* Touch-friendly tap target */
+  }
+
+  /* Admin Coupon Form */
+  .admin-coupons-page .form-row {
+    flex-direction: column !important;
+  }
+  .admin-coupons-page .form-row .btn-primary {
+    width: 100% !important;
+  }
+
+  /* Footer Links */
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+    text-align: center;
+  }
+  .footer-socials {
+    justify-content: center;
+  }
+}
+
+
 
