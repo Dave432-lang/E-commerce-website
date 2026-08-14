@@ -135,18 +135,20 @@ const Navbar = () => {
           {user ? (
             <div className="user-dropdown-container">
               {user.role === 'admin' && (
-                <Link to="/admin" className="nav-link admin-nav-link" style={{ marginRight: '1rem', color: 'var(--primary)', fontWeight: 600 }}>
-                  Admin Panel
+                <Link to="/admin" className="admin-nav-badge" title="Access Admin Dashboard">
+                  Admin
                 </Link>
               )}
-              <Link to="/profile" className="user-name-nav">Hi, {user.name.split(' ')[0]}</Link>
+              <Link to="/profile" className="user-name-nav" title="View Profile">
+                Hi, {user.name.split(' ')[0]}
+              </Link>
               <button className="icon-btn" onClick={logout} title="Logout">
-                <User size={22} />
+                <User size={20} />
               </button>
             </div>
           ) : (
-            <Link to="/login" className="icon-btn">
-              <User size={22} />
+            <Link to="/login" className="icon-btn" title="Sign In">
+              <User size={20} />
             </Link>
           )}
 
@@ -155,15 +157,15 @@ const Navbar = () => {
             onClick={toggleTheme} 
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
           >
-            {theme === 'dark' ? <Sun size={20} className="icon-warning" /> : <Moon size={20} />}
+            {theme === 'dark' ? <Sun size={19} className="icon-warning" /> : <Moon size={19} />}
           </button>
 
-          <button className="icon-btn cart-btn" onClick={() => navigate('/cart')}>
-            <ShoppingBag size={22} />
+          <button className="icon-btn cart-btn" onClick={() => setIsCartOpen(true)} title="View Shopping Cart">
+            <ShoppingBag size={20} />
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
-          <button className="icon-btn mobile-menu-btn">
-            <Menu size={24} />
+          <button className="icon-btn mobile-menu-btn" title="Open Menu">
+            <Menu size={22} />
           </button>
         </div>
       </div>
