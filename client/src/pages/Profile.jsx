@@ -4,7 +4,7 @@ import { orderService } from '../services/orderService';
 import { wishlistService } from '../services/wishlistService';
 import { authService } from '../services/authService';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, Package, User, Settings, LogOut, ChevronRight, MapPin, Heart, CheckCircle, Loader2, Trash2 } from 'lucide-react';
+import { ShoppingBag, Package, User, Settings, LogOut, ChevronRight, MapPin, Heart, CheckCircle, Loader2, Trash2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
@@ -21,6 +21,79 @@ const Profile = () => {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handlePrintInvoice = (order) => {
+    const printWindow = window.open('', '_blank');
+    const itemsHtml = order.items.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name} (${item.size || 'M'}, ${item.color || 'Default'})</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.price).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice - ${order.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: bold; color: #6366f1; }
+            .info-grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background: #f8fafc; padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1; }
+            .total { text-align: right; font-size: 18px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">BOUTIQUE</div>
+            <div>
+              <h2>INVOICE</h2>
+              <p><b>Order ID:</b> ${order.id}</p>
+              <p><b>Date:</b> ${order.date}</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div>
+              <h4>Billed To:</h4>
+              <p><b>${user.name}</b></p>
+              <p>${user.email}</p>
+              <p>${order.shippingAddress || 'Ghana'}</p>
+            </div>
+            <div>
+              <h4>Payment Info:</h4>
+              <p><b>Method:</b> ${order.paymentMethod || 'Paystack'}</p>
+              <p><b>Status:</b> ${order.status}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <div class="total">
+            Total Paid: $${Number(order.total).toFixed(2)}
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Sync form with user data when user is available
   useEffect(() => {
@@ -197,9 +270,18 @@ const Profile = () => {
                             </div>
                           ))}
                         </div>
-                        <div className="order-meta-info">
-                          {order.shippingAddress && <p><MapPin size={14} /> {order.shippingAddress}</p>}
-                          {order.paymentMethod && <p><ChevronRight size={14} /> Paid via {order.paymentMethod}</p>}
+                        <div className="order-meta-info" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+                          <div>
+                            {order.shippingAddress && <p style={{ margin: 0, fontSize: '0.85rem' }}><MapPin size={14} /> {order.shippingAddress}</p>}
+                            {order.paymentMethod && <p style={{ margin: 0, fontSize: '0.85rem' }}><ChevronRight size={14} /> Paid via {order.paymentMethod}</p>}
+                          </div>
+                          <button
+                            className="btn-secondary btn-small"
+                            onClick={() => handlePrintInvoice(order)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            <Download size={14} /> Invoice PDF
+                          </button>
                         </div>
                       </div>
                     </div>

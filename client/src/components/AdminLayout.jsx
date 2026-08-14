@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Shirt, ClipboardList, Users, ArrowLeft, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Shirt, ClipboardList, Users, Tag, ArrowLeft, Menu, X } from 'lucide-react';
 
 const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -66,6 +66,16 @@ const AdminLayout = () => {
           </NavLink>
 
           <NavLink 
+            to="/admin/coupons" 
+            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+            onClick={closeMobileSidebar}
+            title="Coupons"
+          >
+            <Tag size={20} />
+            {!isCollapsed && <span>Coupons</span>}
+          </NavLink>
+
+          <NavLink 
             to="/admin/users" 
             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
             onClick={closeMobileSidebar}
@@ -75,6 +85,7 @@ const AdminLayout = () => {
             {!isCollapsed && <span>Users</span>}
           </NavLink>
         </nav>
+
 
         <div className="admin-sidebar-footer">
           <Link to="/" className="admin-nav-item return-store-btn" title="Return to Store">

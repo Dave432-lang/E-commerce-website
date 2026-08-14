@@ -21,6 +21,7 @@ import Dashboard from './pages/Admin/Dashboard'
 import Product from './pages/Admin/Product'
 import Orders from './pages/Admin/Orders'
 import Users from './pages/Admin/Users'
+import Coupons from './pages/Admin/Coupons'
 import { useCart } from './context/CartContext'
 
 function App() {
@@ -53,10 +54,12 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Product />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="coupons" element={<Coupons />} />
             <Route path="users" element={<Users />} />
           </Route>
         </Routes>
       </main>
+
 
       {!isAdminRoute && <Footer />}
     </div>
