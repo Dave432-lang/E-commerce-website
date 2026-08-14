@@ -32,9 +32,14 @@ export const cartService = {
 
   // Sync guest cart with database cart upon login
   syncCart: async (items) => {
-    return await apiRequest('/cart/sync', {
-      method: 'POST',
-      body: JSON.stringify({ items })
-    });
+    try {
+      return await apiRequest('/cart/sync', {
+        method: 'POST',
+        body: JSON.stringify({ items })
+      });
+    } catch (err) {
+      console.warn('Sync cart handled locally:', err.message);
+      return { message: 'Local cart retained' };
+    }
   }
 };

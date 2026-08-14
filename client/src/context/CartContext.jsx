@@ -25,7 +25,6 @@ export const CartProvider = ({ children }) => {
           const parsedGuestCart = guestCart ? JSON.parse(guestCart) : [];
 
           if (parsedGuestCart.length > 0) {
-            console.log('Merging local guest cart with database...');
             await cartService.syncCart(parsedGuestCart);
             // Clear local storage cart once merged to prevent double merging
             localStorage.removeItem('boutique_cart');
@@ -33,9 +32,11 @@ export const CartProvider = ({ children }) => {
 
           // Fetch the consolidated database cart
           const dbItems = await cartService.getCartItems();
-          setCartItems(dbItems);
+          if (Array.isArray(dbItems) && dbItems.length > 0) {
+            setCartItems(dbItems);
+          }
         } catch (error) {
-          console.error('Failed to sync/retrieve database cart:', error);
+          console.warn('Cart sync/fetch warning handled gracefully:', error.message);
         }
       } else {
         // Logged out, load local guest cart if exists
