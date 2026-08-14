@@ -221,4 +221,59 @@ describe('Security & Price Verification Tests', () => {
     expect(accra).toBeDefined();
     expect(Number(accra.fee)).toEqual(25.00);
   });
+
+  it('8. Admin Order Status Whitelist Test: Should reject status outside allowed list', async () => {
+    const adminAuthToken = jwt.sign(
+      { id: testUserId, email: 'admin@example.com', role: 'admin' },
+      process.env.JWT_SECRET || 'supersecretjwtkey_boutique_2026',
+      { expiresIn: '1h' }
+    );
+
+    const res = await request(app)
+      .put('/api/admin/orders/1/status')
+      .set('Authorization', `Bearer ${adminAuthToken}`)
+      .send({ status: 'INVALID_UNAPPROVED_STATUS' });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toContain('Invalid or missing order status');
+  });
+
+  it('9. Negative Delivery Fee Validation Test: Should reject creation of negative delivery fee', async () => {
+    const adminAuthToken = jwt.sign(
+      { id: testUserId, email: 'admin@example.com', role: 'admin' },
+      process.env.JWT_SECRET || 'supersecretjwtkey_boutique_2026',
+      { expiresIn: '1h' }
+    );
+
+    const res = await request(app)
+      .post('/api/delivery/fees')
+      .set('Authorization', `Bearer ${adminAuthToken}`)
+      .send({
+        region_name: 'Invalid Negative Region',
+        fee: -15.00
+      });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toContain('Valid non-negative delivery fee amount is required');
+  });
+
+  it('10. Duplicate Region Name Case-Insensitive Test: Should reject duplicate region names regardless of casing', async () => {
+    const adminAuthToken = jwt.sign(
+      { id: testUserId, email: 'admin@example.com', role: 'admin' },
+      process.env.JWT_SECRET || 'supersecretjwtkey_boutique_2026',
+      { expiresIn: '1h' }
+    );
+
+    // Attempting to add 'greater accra' (lowercase) when 'Greater Accra' already exists
+    const res = await request(app)
+      .post('/api/delivery/fees')
+      .set('Authorization', `Bearer ${adminAuthToken}`)
+      .send({
+        region_name: 'greater accra',
+        fee: 30.00
+      });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toContain('already exists');
+  });
 });

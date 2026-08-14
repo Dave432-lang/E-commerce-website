@@ -56,8 +56,8 @@ export const createDeliveryFee = async (req, res) => {
   try {
     const cleanRegion = region_name.trim();
     
-    // Check for duplicate region name
-    const existing = await query('SELECT id FROM delivery_fees WHERE region_name = ?', [cleanRegion]);
+    // Check for duplicate region name (case-insensitive)
+    const existing = await query('SELECT id FROM delivery_fees WHERE LOWER(region_name) = LOWER(?)', [cleanRegion]);
     if (existing.length > 0) {
       return res.status(400).json({ message: `Delivery fee for region '${cleanRegion}' already exists` });
     }
