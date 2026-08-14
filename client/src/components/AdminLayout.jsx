@@ -3,28 +3,34 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { LayoutDashboard, Shirt, ClipboardList, Users, ArrowLeft, Menu, X } from 'lucide-react';
 
 const AdminLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    // On mobile, toggle mobile drawer. On desktop, toggle collapse mode.
+    if (window.innerWidth <= 1024) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
+  const closeMobileSidebar = () => {
+    setMobileOpen(false);
   };
 
   return (
     <div className="admin-layout">
-      {/* Mobile Sidebar Trigger */}
-      <button className="admin-sidebar-toggle" onClick={toggleSidebar}>
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
       {/* Sidebar Navigation */}
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header">
-          <h3>Boutique Admin</h3>
-          <p>Store Manager</p>
+          <div className="admin-logo-badge">B</div>
+          {!isCollapsed && (
+            <div className="admin-header-titles">
+              <h3>Boutique Admin</h3>
+              <p>Store Manager</p>
+            </div>
+          )}
         </div>
 
         <nav className="admin-sidebar-nav">
@@ -32,51 +38,71 @@ const AdminLayout = () => {
             to="/admin" 
             end 
             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-            onClick={closeSidebar}
+            onClick={closeMobileSidebar}
+            title="Dashboard"
           >
             <LayoutDashboard size={20} />
-            <span>Dashboard</span>
+            {!isCollapsed && <span>Dashboard</span>}
           </NavLink>
 
           <NavLink 
             to="/admin/products" 
             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-            onClick={closeSidebar}
+            onClick={closeMobileSidebar}
+            title="Products"
           >
             <Shirt size={20} />
-            <span>Products</span>
+            {!isCollapsed && <span>Products</span>}
           </NavLink>
 
           <NavLink 
             to="/admin/orders" 
             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-            onClick={closeSidebar}
+            onClick={closeMobileSidebar}
+            title="Orders"
           >
             <ClipboardList size={20} />
-            <span>Orders</span>
+            {!isCollapsed && <span>Orders</span>}
           </NavLink>
 
           <NavLink 
             to="/admin/users" 
             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-            onClick={closeSidebar}
+            onClick={closeMobileSidebar}
+            title="Users"
           >
             <Users size={20} />
-            <span>Users</span>
+            {!isCollapsed && <span>Users</span>}
           </NavLink>
         </nav>
 
         <div className="admin-sidebar-footer">
-          <Link to="/" className="admin-nav-item return-store-btn">
+          <Link to="/" className="admin-nav-item return-store-btn" title="Return to Store">
             <ArrowLeft size={18} />
-            <span>Return to Store</span>
+            {!isCollapsed && <span>Return to Store</span>}
           </Link>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="admin-main">
-        {sidebarOpen && <div className="admin-sidebar-overlay" onClick={closeSidebar} />}
+      <main className={`admin-main ${isCollapsed ? 'collapsed' : ''}`}>
+        {mobileOpen && <div className="admin-sidebar-overlay" onClick={closeMobileSidebar} />}
+        
+        {/* Admin Top Navigation Bar */}
+        <header className="admin-top-bar">
+          <button 
+            className="admin-sidebar-toggle-btn" 
+            onClick={toggleSidebar}
+            title={(mobileOpen || !isCollapsed) ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            {(mobileOpen || isCollapsed) ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          <div className="admin-top-bar-right">
+            <span className="admin-status-indicator">● Store Active</span>
+          </div>
+        </header>
+
         <div className="admin-content-container">
           <Outlet />
         </div>

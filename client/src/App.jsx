@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
@@ -25,10 +25,12 @@ import { useCart } from './context/CartContext'
 
 function App() {
   const { isCartOpen, setIsCartOpen } = useCart();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="app-container">
-      <Navbar />
+    <div className={isAdminRoute ? "admin-app-wrapper" : "app-container"}>
+      {!isAdminRoute && <Navbar />}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       
       <main style={{ width: '100%', flex: 1 }}>
@@ -56,9 +58,10 @@ function App() {
         </Routes>
       </main>
 
-      <Footer />
+      {!isAdminRoute && <Footer />}
     </div>
   )
 }
 
 export default App
+
