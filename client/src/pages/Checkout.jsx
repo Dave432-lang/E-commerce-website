@@ -36,7 +36,22 @@ const Checkout = () => {
   const [couponSuccess, setCouponSuccess] = useState('');
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  const finalTotal = appliedCoupon ? appliedCoupon.newTotal : cartTotal;
+  // Delivery fees state
+  const [deliveryFeesList, setDeliveryFeesList] = useState([]);
+
+  React.useEffect(() => {
+    const fetchFees = async () => {
+      try {
+        const fees = await orderService.getDeliveryFees();
+        if (Array.isArray(fees)) {
+          setDeliveryFeesList(fees);
+        }
+      } catch (err) {
+        console.warn('Could not load dynamic regional delivery fees:', err.message);
+      }
+    };
+    fetchFees();
+  }, []);
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
@@ -48,6 +63,11 @@ const Checkout = () => {
     country: 'Ghana',
     phone: '',
   });
+
+  const activeFeeRow = deliveryFeesList.find(f => f.region_name === formData.region);
+  const deliveryFee = activeFeeRow ? Number(activeFeeRow.fee) : 25.00;
+  const discountAmount = appliedCoupon ? Number(appliedCoupon.discountAmount || 0) : 0;
+  const finalTotal = Math.max(0, cartTotal + deliveryFee - discountAmount);
 
   const ghanaRegions = [
     'Greater Accra', 'Ashanti', 'Western', 'Eastern', 'Central', 
@@ -150,6 +170,9 @@ const Checkout = () => {
               })),
               totalAmount: finalTotal,
               shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+              region: formData.region,
+              city: formData.city,
+              couponCode: appliedCoupon ? appliedCoupon.code : null,
               paymentReference: response.reference,
               paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
             });
@@ -398,8 +421,8 @@ const Checkout = () => {
                 </div>
               )}
               <div className="summary-row">
-                <span>Delivery</span>
-                <span className="free-shipping-text" style={{ color: '#10b981', fontWeight: 600 }}>Free</span>
+                <span>Delivery ({formData.region})</span>
+                <span>GH₵{deliveryFee.toFixed(2)}</span>
               </div>
               <div className="summary-row total">
                 <span>Total</span>
@@ -409,7 +432,7 @@ const Checkout = () => {
 
             <div className="summary-guarantee">
               <Truck size={18} />
-              <p>Free delivery within Ghana</p>
+              <p>Express Regional Delivery across Ghana</p>
             </div>
           </div>
         </aside>

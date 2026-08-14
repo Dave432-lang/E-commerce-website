@@ -89,6 +89,47 @@ const runMigrations = async () => {
       console.log('Successfully completed products table migration (added stock_quantity column).');
     }
 
+    // 4b. Add gender, sale_price, is_featured, is_new_arrival to products
+    const genderCols = await query("SHOW COLUMNS FROM products LIKE 'gender'");
+    if (genderCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN gender VARCHAR(20) NULL DEFAULT 'unisex'");
+      console.log('Successfully completed products table migration (added gender column).');
+    }
+
+    const salePriceCols = await query("SHOW COLUMNS FROM products LIKE 'sale_price'");
+    if (salePriceCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN sale_price DECIMAL(10, 2) NULL DEFAULT NULL");
+      console.log('Successfully completed products table migration (added sale_price column).');
+    }
+
+    const featCols = await query("SHOW COLUMNS FROM products LIKE 'is_featured'");
+    if (featCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN is_featured TINYINT(1) DEFAULT 0");
+      console.log('Successfully completed products table migration (added is_featured column).');
+    }
+
+    const newArrivalCols = await query("SHOW COLUMNS FROM products LIKE 'is_new_arrival'");
+    if (newArrivalCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN is_new_arrival TINYINT(1) DEFAULT 1");
+      console.log('Successfully completed products table migration (added is_new_arrival column).');
+    }
+
+    // Add indexes on products table for fast filtering
+    const createIndexSafe = async (indexName, sql) => {
+      try {
+        await query(sql);
+        console.log(`Successfully verified index ${indexName} on products table.`);
+      } catch (e) {
+        // Index already exists
+      }
+    };
+
+    await createIndexSafe('idx_products_gender', 'CREATE INDEX idx_products_gender ON products(gender)');
+    await createIndexSafe('idx_products_category', 'CREATE INDEX idx_products_category ON products(category)');
+    await createIndexSafe('idx_products_is_featured', 'CREATE INDEX idx_products_is_featured ON products(is_featured)');
+    await createIndexSafe('idx_products_is_new_arrival', 'CREATE INDEX idx_products_is_new_arrival ON products(is_new_arrival)');
+    await createIndexSafe('idx_products_sale_price', 'CREATE INDEX idx_products_sale_price ON products(sale_price)');
+
     // 5. Create reviews table for customer product ratings
     await query(`
       CREATE TABLE IF NOT EXISTS reviews (
@@ -104,29 +145,85 @@ const runMigrations = async () => {
     `);
     console.log('Successfully verified reviews table exists in database.');
 
-    // 6. Create coupons table for promotional discounts
+    // 6. Create & Upgrade coupons table
     await query(`
       CREATE TABLE IF NOT EXISTS coupons (
         id INT AUTO_INCREMENT PRIMARY KEY,
         code VARCHAR(50) NOT NULL UNIQUE,
-        discount_percent INT NOT NULL CHECK (discount_percent BETWEEN 1 AND 100),
-        min_order_amount DECIMAL(10, 2) DEFAULT 0.00,
+        discount_type VARCHAR(20) DEFAULT 'percentage',
+        discount_value DECIMAL(10, 2) NOT NULL DEFAULT 10.00,
+        min_order_value DECIMAL(10, 2) DEFAULT 0.00,
+        usage_limit INT NULL DEFAULT NULL,
+        times_used INT DEFAULT 0,
+        expires_at TIMESTAMP NULL DEFAULT NULL,
         is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB;
     `);
     console.log('Successfully verified coupons table exists in database.');
 
+    // Upgrade coupons table columns if created under older schema
+    const typeCol = await query("SHOW COLUMNS FROM coupons LIKE 'discount_type'");
+    if (typeCol.length === 0) {
+      await query("ALTER TABLE coupons ADD COLUMN discount_type VARCHAR(20) DEFAULT 'percentage'");
+      await query("ALTER TABLE coupons ADD COLUMN discount_value DECIMAL(10, 2) NOT NULL DEFAULT 10.00");
+      await query("ALTER TABLE coupons ADD COLUMN min_order_value DECIMAL(10, 2) DEFAULT 0.00");
+      await query("ALTER TABLE coupons ADD COLUMN usage_limit INT NULL DEFAULT NULL");
+      await query("ALTER TABLE coupons ADD COLUMN times_used INT DEFAULT 0");
+      await query("ALTER TABLE coupons ADD COLUMN expires_at TIMESTAMP NULL DEFAULT NULL");
+    }
+
+    // Drop legacy min_order_amount if it exists
+    const legacyCol = await query("SHOW COLUMNS FROM coupons LIKE 'min_order_amount'");
+    if (legacyCol.length > 0) {
+      try {
+        await query("ALTER TABLE coupons DROP COLUMN min_order_amount");
+        console.log('Dropped legacy min_order_amount column from coupons table in favor of min_order_value.');
+      } catch (e) { /* ignore if constraint error */ }
+    }
+
     // Seed default coupons if none exist
     const existingCoupons = await query('SELECT COUNT(*) as count FROM coupons');
     if (existingCoupons[0].count === 0) {
       await query(`
-        INSERT INTO coupons (code, discount_percent, min_order_amount) VALUES
-        ('WELCOME10', 10, 0.00),
-        ('BOUTIQUE20', 20, 50.00),
-        ('SAVE15', 15, 30.00)
+        INSERT INTO coupons (code, discount_type, discount_value, min_order_value) VALUES
+        ('WELCOME10', 'percentage', 10.00, 0.00),
+        ('BOUTIQUE20', 'percentage', 20.00, 50.00),
+        ('SAVE15', 'percentage', 15.00, 30.00)
       `);
-      console.log('Successfully seeded default promo coupons (WELCOME10, BOUTIQUE20, SAVE15).');
+      console.log('Successfully seeded default promo coupons.');
+    }
+
+    // 7. Create delivery_fees table for configurable regional fees
+    await query(`
+      CREATE TABLE IF NOT EXISTS delivery_fees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        region_name VARCHAR(100) UNIQUE NOT NULL,
+        fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        estimated_delivery VARCHAR(100) DEFAULT '2-3 Business Days',
+        is_active TINYINT(1) DEFAULT 1,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB;
+    `);
+    console.log('Successfully verified delivery_fees table exists in database.');
+
+    const feeCount = await query('SELECT COUNT(*) as count FROM delivery_fees');
+    if (feeCount[0].count === 0) {
+      await query(`
+        INSERT INTO delivery_fees (region_name, fee, estimated_delivery) VALUES
+        ('Greater Accra', 25.00, '1-2 Business Days'),
+        ('Ashanti', 35.00, '2-3 Business Days'),
+        ('Central', 35.00, '2-3 Business Days'),
+        ('Eastern', 35.00, '2-3 Business Days'),
+        ('Western', 40.00, '3-4 Business Days'),
+        ('Volta', 40.00, '3-4 Business Days'),
+        ('Northern', 50.00, '4-5 Business Days'),
+        ('Upper East', 50.00, '4-5 Business Days'),
+        ('Upper West', 50.00, '4-5 Business Days'),
+        ('Bono', 45.00, '3-4 Business Days'),
+        ('Other', 40.00, '3-5 Business Days')
+      `);
+      console.log('Successfully seeded default regional delivery fees.');
     }
   } catch (err) {
     console.error('Database migration error:', err);

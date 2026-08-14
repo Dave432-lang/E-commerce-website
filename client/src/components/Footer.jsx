@@ -26,26 +26,26 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="footer-links-col">
-            <h4 className="footer-heading">Shop</h4>
-            <Link to="/shop" className="footer-link">New Arrivals</Link>
-            <Link to="/shop" className="footer-link">Best Sellers</Link>
-            <Link to="/shop" className="footer-link">Sale</Link>
-            <Link to="/shop" className="footer-link">Collections</Link>
+            <h4 className="footer-heading">Departments</h4>
+            <Link to="/women" className="footer-link">Women's Fashion</Link>
+            <Link to="/men" className="footer-link">Men's Apparel</Link>
+            <Link to="/new-arrivals" className="footer-link">New Arrivals</Link>
+            <Link to="/sale" className="footer-link">Special Offers & Sale</Link>
           </div>
 
           <div className="footer-links-col">
-            <h4 className="footer-heading">Help</h4>
-            <Link to="/about" className="footer-link">FAQ</Link>
-            <Link to="/about" className="footer-link">Delivery & Returns</Link>
-            <Link to="/about" className="footer-link">Track Order</Link>
-            <Link to="/about" className="footer-link">Contact Us</Link>
+            <h4 className="footer-heading">Customer Care</h4>
+            <Link to="/contact" className="footer-link">Contact Us</Link>
+            <Link to="/about" className="footer-link">About Ghana Boutique</Link>
+            <Link to="/about" className="footer-link">Regional Delivery Info</Link>
+            <Link to="/contact" className="footer-link">MTN MoMo & Card Help</Link>
           </div>
 
           {/* Newsletter */}
           <div className="footer-newsletter">
-            <h4 className="footer-heading">Join Our Newsletter</h4>
+            <h4 className="footer-heading">Boutique VIP Club</h4>
             <p className="footer-description" style={{ marginBottom: '1rem' }}>
-              Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.
+              Subscribe for exclusive drops, VIP promo codes, and luxury fashion updates in Ghana.
             </p>
             <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
               <input type="email" placeholder="Enter your email" className="newsletter-input" required />
@@ -57,10 +57,10 @@ const Footer = () => {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Boutique. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Boutique Ghana. All rights reserved. Express Regional Delivery (GH₵).</p>
           <div className="footer-bottom-links">
             <Link to="/about">Privacy Policy</Link>
-            <Link to="/about">Terms of Service</Link>
+            <Link to="/contact">Terms of Service</Link>
           </div>
         </div>
       </div>

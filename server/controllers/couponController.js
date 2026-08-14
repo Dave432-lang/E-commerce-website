@@ -23,25 +23,41 @@ export const validateCoupon = async (req, res) => {
 
     const coupon = rows[0];
     const total = Number(orderTotal) || 0;
-    const minOrder = Number(coupon.min_order_amount) || 0;
+    const minOrder = Number(coupon.min_order_value) || 0;
 
     if (total < minOrder) {
       return res.status(400).json({
-        message: `This coupon requires a minimum order total of $${minOrder.toFixed(2)}`
+        message: `This coupon requires a minimum order total of GH₵${minOrder.toFixed(2)}`
       });
     }
 
-    const discountPercent = Number(coupon.discount_percent);
-    const discountAmount = Number(((total * discountPercent) / 100).toFixed(2));
-    const newTotal = Number((total - discountAmount).toFixed(2));
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'This coupon code has expired' });
+    }
+
+    if (coupon.usage_limit !== null && coupon.times_used >= coupon.usage_limit) {
+      return res.status(400).json({ message: 'This coupon code usage limit has been reached' });
+    }
+
+    const discountVal = Number(coupon.discount_value);
+    let discountAmount = 0;
+
+    if (coupon.discount_type === 'fixed') {
+      discountAmount = Math.min(total, discountVal);
+    } else {
+      discountAmount = Number(((total * discountVal) / 100).toFixed(2));
+    }
+
+    const newTotal = Number(Math.max(0, total - discountAmount).toFixed(2));
 
     res.json({
       valid: true,
       code: coupon.code,
-      discountPercent,
+      discountType: coupon.discount_type,
+      discountValue: discountVal,
       discountAmount,
       newTotal,
-      message: `Coupon '${coupon.code}' applied! You saved ${discountPercent}%.`
+      message: `Coupon '${coupon.code}' applied! You saved ${coupon.discount_type === 'fixed' ? 'GH₵' + discountVal.toFixed(2) : discountVal + '%'}.`
     });
   } catch (error) {
     console.error('Validate Coupon Error:', error);
@@ -58,8 +74,12 @@ export const getAllCoupons = async (req, res) => {
     res.json(coupons.map(c => ({
       id: c.id,
       code: c.code,
-      discountPercent: Number(c.discount_percent),
-      minOrderAmount: Number(c.min_order_amount),
+      discountType: c.discount_type || 'percentage',
+      discountValue: Number(c.discount_value || c.discount_percent || 10),
+      minOrderValue: Number(c.min_order_value || 0),
+      usageLimit: c.usage_limit,
+      timesUsed: c.times_used || 0,
+      expiresAt: c.expires_at,
       isActive: Boolean(c.is_active),
       createdAt: c.created_at
     })));
@@ -73,18 +93,19 @@ export const getAllCoupons = async (req, res) => {
 // @route   POST /api/coupons
 // @access  Private/Admin
 export const createCoupon = async (req, res) => {
-  const { code, discountPercent, minOrderAmount } = req.body;
+  const { code, discountType, discountValue, minOrderValue, usageLimit, expiresAt } = req.body;
 
-  if (!code || !discountPercent) {
-    return res.status(400).json({ message: 'Coupon code and discount percentage are required' });
+  if (!code || !discountValue) {
+    return res.status(400).json({ message: 'Coupon code and discount value are required' });
   }
 
   const cleanCode = code.trim().toUpperCase();
-  const percent = Number(discountPercent);
-  const minOrder = minOrderAmount !== undefined ? Number(minOrderAmount) : 0;
+  const val = Number(discountValue);
+  const minOrder = minOrderValue !== undefined ? Number(minOrderValue) : 0;
+  const type = discountType === 'fixed' ? 'fixed' : 'percentage';
 
-  if (percent < 1 || percent > 100) {
-    return res.status(400).json({ message: 'Discount percent must be between 1 and 100' });
+  if (val <= 0) {
+    return res.status(400).json({ message: 'Discount value must be greater than 0' });
   }
 
   try {
@@ -94,16 +115,17 @@ export const createCoupon = async (req, res) => {
     }
 
     const result = await query(
-      'INSERT INTO coupons (code, discount_percent, min_order_amount) VALUES (?, ?, ?)',
-      [cleanCode, percent, minOrder]
+      'INSERT INTO coupons (code, discount_type, discount_value, min_order_value, usage_limit, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [cleanCode, type, val, minOrder, usageLimit || null, expiresAt || null]
     );
 
     res.status(201).json({
       message: `Coupon '${cleanCode}' created successfully`,
       id: result.insertId,
       code: cleanCode,
-      discountPercent: percent,
-      minOrderAmount: minOrder
+      discountType: type,
+      discountValue: val,
+      minOrderValue: minOrder
     });
   } catch (error) {
     console.error('Create Coupon Error:', error);

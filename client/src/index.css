@@ -3767,5 +3767,43 @@ body {
   }
 }
 
+/* Ghanaian Department & Shop Enhancements */
+.department-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dept-btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.dept-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.dept-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.product-card.out-of-stock {
+  filter: grayscale(20%);
+}
+
+
 
 

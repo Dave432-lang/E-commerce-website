@@ -5,12 +5,30 @@ import { emailService } from '../services/emailService.js';
 // @desc    Create a new order & verify Paystack payment
 // @route   POST /api/orders
 // @access  Private
+const sanitizeText = (text) => {
+  if (!text) return '';
+  return String(text).replace(/<[^>]*>/g, '').trim().substring(0, 500);
+};
+
+// @desc    Create a new order & verify Paystack payment
+// @route   POST /api/orders
+// @access  Private
 export const createOrder = async (req, res) => {
-  const { items, couponCode, shippingAddress, paymentReference, paymentMethod } = req.body;
+  let { items, couponCode, shippingAddress, region, city, landmark, paymentReference, paymentMethod } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0 || !shippingAddress || !paymentReference) {
     return res.status(400).json({ message: 'Missing order items, shipping address, or payment reference' });
   }
+
+  // Sanitize text inputs server-side
+  const cleanAddress = sanitizeText(shippingAddress);
+  const cleanRegion = sanitizeText(region);
+  const cleanCity = sanitizeText(city);
+  const cleanLandmark = sanitizeText(landmark);
+
+  const fullShippingAddress = [cleanAddress, cleanCity, cleanRegion, cleanLandmark ? `Landmark: ${cleanLandmark}` : '']
+    .filter(Boolean)
+    .join(', ');
 
   try {
     // 1. Check if order with this payment_reference already exists (Idempotency Pre-Check)
@@ -25,7 +43,7 @@ export const createOrder = async (req, res) => {
     }
 
     // 2. Authoritative Server-Side Price & Quantity Validation
-    let calculatedTotal = 0;
+    let subtotal = 0;
     const verifiedItems = [];
 
     for (const item of items) {
@@ -36,9 +54,9 @@ export const createOrder = async (req, res) => {
         return res.status(400).json({ message: 'Invalid product item or quantity in order request' });
       }
 
-      // Query real price and stock from database
+      // Query real price, sale_price and stock directly from database
       const prodRows = await query(
-        'SELECT id, name, price, stock_quantity, is_archived FROM products WHERE id = ?',
+        'SELECT id, name, price, sale_price, stock_quantity, is_archived FROM products WHERE id = ?',
         [productId]
       );
 
@@ -47,50 +65,77 @@ export const createOrder = async (req, res) => {
       }
 
       const dbProduct = prodRows[0];
-      const dbPrice = Number(dbProduct.price);
-      const lineTotal = dbPrice * qty;
-      calculatedTotal += lineTotal;
+      const regularPrice = Number(dbProduct.price);
+
+      // Server determines effective price (sale price vs regular price)
+      const effectivePrice = (dbProduct.sale_price && Number(dbProduct.sale_price) > 0 && Number(dbProduct.sale_price) < regularPrice)
+        ? Number(dbProduct.sale_price)
+        : regularPrice;
+
+      const lineTotal = effectivePrice * qty;
+      subtotal += lineTotal;
 
       verifiedItems.push({
         id: dbProduct.id,
         name: dbProduct.name,
-        price: dbPrice, // Strict DB price
+        price: effectivePrice, // Server-calculated effective snapshot price
         quantity: qty,
         size: item.size || 'M',
         color: item.color || 'Default'
       });
     }
 
-    // 3. Apply Coupon Code Discount Server-Side if Provided
+    // 3. Server-Side Regional Delivery Fee Lookup
+    let deliveryFee = 0;
+    if (cleanRegion) {
+      const feeRows = await query('SELECT fee FROM delivery_fees WHERE region_name = ? AND is_active = 1', [cleanRegion]);
+      if (feeRows && feeRows.length > 0) {
+        deliveryFee = Number(feeRows[0].fee);
+      } else {
+        deliveryFee = 40.00; // Standard fallback region fee
+      }
+    }
+
+    // 4. Apply Coupon Discount Server-Side
+    let discount = 0;
     if (couponCode) {
       const couponRows = await query(
-        'SELECT discount_percent, min_order_amount FROM coupons WHERE code = ? AND is_active = 1',
+        'SELECT * FROM coupons WHERE code = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())',
         [couponCode]
       );
       if (couponRows && couponRows.length > 0) {
         const coupon = couponRows[0];
-        if (calculatedTotal >= Number(coupon.min_order_amount)) {
-          const discount = (calculatedTotal * Number(coupon.discount_percent)) / 100;
-          calculatedTotal -= discount;
+        const minOrder = Number(coupon.min_order_value || coupon.min_order_amount || 0);
+        const usageLimit = coupon.usage_limit;
+        const timesUsed = coupon.times_used || 0;
+
+        if (subtotal >= minOrder && (usageLimit === null || timesUsed < usageLimit)) {
+          if (coupon.discount_type === 'fixed') {
+            discount = Number(coupon.discount_value);
+          } else {
+            discount = (subtotal * Number(coupon.discount_value || coupon.discount_percent || 10)) / 100;
+          }
         }
       }
     }
 
+    // Final Authoritative Total Formula: Subtotal + Delivery Fee - Discount
+    let calculatedTotal = Math.max(0, subtotal + deliveryFee - discount);
     calculatedTotal = Math.round(calculatedTotal * 100) / 100;
 
-    // 4. Verify Payment with Paystack REST API
+    // 5. Verify Payment with Paystack REST API
     const paystackData = await paymentService.verifyTransaction(paymentReference);
 
     if (!paystackData.status || paystackData.data.status !== 'success') {
       return res.status(400).json({ message: 'Paystack payment verification failed' });
     }
 
-    // Convert Paystack minor units (pesewas/cents) to main decimal currency
+    // Convert Paystack minor units (pesewas) to main decimal currency (Cedis)
     const paidAmount = paystackData.data.amount / 100;
 
     // Validate paid amount strictly against server-calculated DB total
     if (Math.abs(paidAmount - calculatedTotal) > 0.05) {
-      console.error(`PRICE MANIPULATION DETECTED! Paid: ${paidAmount}, Server Calculated Required: ${calculatedTotal}`);
+      console.error(`PRICE MANIPULATION DETECTED! Paid: ${paidAmount}, Required: ${calculatedTotal}`);
       return res.status(400).json({
         message: `Payment verification error: Paid amount (GH₵${paidAmount.toFixed(2)}) does not match required order total (GH₵${calculatedTotal.toFixed(2)})`
       });
@@ -122,7 +167,7 @@ export const createOrder = async (req, res) => {
       // Insert Order
       const [orderResult] = await conn.execute(
         'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, payment_reference) VALUES (?, ?, ?, ?, ?, ?)',
-        [req.user.id, calculatedTotal, 'Processing', shippingAddress, paymentMethod || 'Paystack (Card/Momo)', paymentReference]
+        [req.user.id, calculatedTotal, 'Processing', fullShippingAddress || cleanAddress, paymentMethod || 'Paystack (Card/Momo)', paymentReference]
       );
 
       const orderId = orderResult.insertId;
@@ -137,6 +182,13 @@ export const createOrder = async (req, res) => {
         await conn.execute(
           'UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?',
           [item.quantity, item.id]
+        );
+      }
+
+      if (couponCode) {
+        await conn.execute(
+          'UPDATE coupons SET times_used = times_used + 1 WHERE code = ?',
+          [couponCode]
         );
       }
 

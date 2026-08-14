@@ -12,5 +12,10 @@ export const orderService = {
   // Get logged-in user's order history
   getMyOrders: async () => {
     return await apiRequest('/orders/my-orders');
+  },
+
+  // Fetch active regional delivery fees
+  getDeliveryFees: async () => {
+    return await apiRequest('/delivery/fees');
   }
 };

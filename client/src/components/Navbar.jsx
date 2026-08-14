@@ -61,9 +61,12 @@ const Navbar = () => {
         {/* Navigation Links - Hidden on Mobile */}
         <div className="navbar-links">
           <Link to="/" className="nav-link">Home</Link>
-          <Link to="/shop" className="nav-link">Shop</Link>
-          <Link to="/shop" className="nav-link">Collections</Link>
+          <Link to="/women" className="nav-link">Women</Link>
+          <Link to="/men" className="nav-link">Men</Link>
+          <Link to="/new-arrivals" className="nav-link">New Arrivals</Link>
+          <Link to="/sale" className="nav-link">Sale</Link>
           <Link to="/about" className="nav-link">About</Link>
+          <Link to="/contact" className="nav-link">Contact</Link>
         </div>
 
         {/* Icons */}

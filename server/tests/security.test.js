@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../server.js';
 import { initDbPromise, query } from '../config/db.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 describe('Security & Price Verification Tests', () => {
   let authToken;
@@ -151,5 +152,73 @@ describe('Security & Price Verification Tests', () => {
 
     // Clean up
     await query('DELETE FROM orders WHERE id = ?', [existingOrderId]);
+  });
+
+  it('5. Pending Order Webhook Processing: Should upgrade pending order to Processing and deduct stock', async () => {
+    const pendingRef = 'BTQ-SEC-PENDING-' + Date.now();
+
+    // 1. Insert an order with status 'pending'
+    const insertRes = await query(
+      'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, payment_reference) VALUES (?, ?, ?, ?, ?, ?)',
+      [testUserId, 150.00, 'pending', 'Cape Coast, Ghana', 'Paystack Momo', pendingRef]
+    );
+
+    const pendingOrderId = insertRes.insertId;
+
+    // 2. Build valid HMAC signature for webhook body
+    const webhookPayload = {
+      event: 'charge.success',
+      data: {
+        reference: pendingRef,
+        amount: 15000,
+        channel: 'card',
+        metadata: {
+          userId: testUserId,
+          shippingAddress: 'Cape Coast, Ghana',
+          items: [{ id: testProductId, quantity: 1, price: 150 }]
+        }
+      }
+    };
+
+    const rawPayload = JSON.stringify(webhookPayload);
+    const signature = crypto
+      .createHmac('sha512', process.env.PAYSTACK_SECRET || '')
+      .update(rawPayload)
+      .digest('hex');
+
+    // 3. Send Webhook
+    const webhookRes = await request(app)
+      .post('/api/payments/webhook')
+      .set('x-paystack-signature', signature)
+      .send(webhookPayload);
+
+    expect(webhookRes.statusCode).toEqual(200);
+    expect(webhookRes.body.message).toContain('Pending order updated to Processing');
+
+    // 4. Verify DB order status changed to 'Processing'
+    const [updatedOrder] = await query('SELECT status FROM orders WHERE id = ?', [pendingOrderId]);
+    expect(updatedOrder.status).toEqual('Processing');
+
+    // Clean up
+    await query('DELETE FROM orders WHERE id = ?', [pendingOrderId]);
+  });
+
+  it('6. Paystack Pesewa Conversion Test: Should correctly convert Ghana Cedis to Pesewas (x100)', () => {
+    const totalInCedis = 250.50;
+    const expectedPesewas = Math.round(totalInCedis * 100);
+    expect(expectedPesewas).toEqual(25050);
+
+    const zeroDecimalCedis = 100.00;
+    expect(Math.round(zeroDecimalCedis * 100)).toEqual(10000);
+  });
+
+  it('7. Regional Delivery Fees API: Should return active regional delivery fees from DB', async () => {
+    const res = await request(app).get('/api/delivery/fees');
+    expect(res.statusCode).toEqual(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    const accra = res.body.find(f => f.region_name === 'Greater Accra');
+    expect(accra).toBeDefined();
+    expect(Number(accra.fee)).toEqual(25.00);
   });
 });

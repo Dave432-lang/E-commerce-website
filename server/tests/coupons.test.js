@@ -31,7 +31,7 @@ describe('Coupon Promo API Endpoints', () => {
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.valid).toBe(true);
-    expect(res.body.discountPercent).toBe(10);
+    expect(res.body.discountValue).toBe(10);
     expect(res.body.discountAmount).toBe(10);
     expect(res.body.newTotal).toBe(90);
   });

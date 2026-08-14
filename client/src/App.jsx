@@ -12,6 +12,7 @@ import Checkout from './pages/Checkout'
 import Profile from './pages/Profile'
 import SearchResults from './pages/SearchResults'
 import About from './pages/About'
+import Contact from './pages/Contact'
 import Cart from './pages/Cart'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -23,6 +24,7 @@ import Orders from './pages/Admin/Orders'
 import Users from './pages/Admin/Users'
 import Coupons from './pages/Admin/Coupons'
 import { useCart } from './context/CartContext'
+import WhatsAppButton from './components/WhatsAppButton'
 
 function App() {
   const { isCartOpen, setIsCartOpen } = useCart();
@@ -39,6 +41,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/women" element={<Shop key="women" initialDepartment="women" />} />
+          <Route path="/men" element={<Shop key="men" initialDepartment="men" />} />
+          <Route path="/new-arrivals" element={<Shop key="new" initialNewArrival={true} />} />
+          <Route path="/sale" element={<Shop key="sale" initialOnSale={true} />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/checkout" element={<Checkout />} />
@@ -48,6 +54,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -60,7 +67,7 @@ function App() {
         </Routes>
       </main>
 
-
+      {!isAdminRoute && <WhatsAppButton />}
       {!isAdminRoute && <Footer />}
     </div>
   )

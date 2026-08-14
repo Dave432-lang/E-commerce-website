@@ -221,12 +221,17 @@ export const SAMPLE_PRODUCTS = [
 ];
 
 // Client-Side Filtering Helper for Fallback Data
-const filterSampleProducts = ({ search = '', categories = [], colors = [], sizes = [], maxPrice = 500, sortBy = 'featured' }) => {
+const filterSampleProducts = ({ search = '', gender = '', categories = [], colors = [], sizes = [], minPrice = 0, maxPrice = 2000, onSale = false, isNewArrival = false, inStockOnly = false, sortBy = 'featured' }) => {
   let filtered = [...SAMPLE_PRODUCTS];
 
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+  }
+
+  if (gender) {
+    const g = gender.toLowerCase();
+    filtered = filtered.filter(p => !p.gender || p.gender === 'unisex' || p.gender.toLowerCase() === g);
   }
 
   if (categories.length > 0) {
@@ -241,14 +246,30 @@ const filterSampleProducts = ({ search = '', categories = [], colors = [], sizes
     filtered = filtered.filter(p => p.sizes && p.sizes.some(s => sizes.includes(s)));
   }
 
-  if (maxPrice) {
+  if (minPrice) {
+    filtered = filtered.filter(p => p.price >= minPrice);
+  }
+
+  if (maxPrice && maxPrice < 2000) {
     filtered = filtered.filter(p => p.price <= maxPrice);
   }
 
+  if (onSale) {
+    filtered = filtered.filter(p => p.sale_price && p.sale_price > 0 && p.sale_price < p.price);
+  }
+
+  if (isNewArrival) {
+    filtered = filtered.filter(p => p.is_new_arrival);
+  }
+
+  if (inStockOnly) {
+    filtered = filtered.filter(p => (p.stock_quantity ?? 50) > 0);
+  }
+
   if (sortBy === 'price-low') {
-    filtered.sort((a, b) => a.price - b.price);
+    filtered.sort((a, b) => (a.sale_price || a.price) - (b.sale_price || b.price));
   } else if (sortBy === 'price-high') {
-    filtered.sort((a, b) => b.price - a.price);
+    filtered.sort((a, b) => (b.sale_price || b.price) - (a.sale_price || a.price));
   } else if (sortBy === 'rating') {
     filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   }
@@ -270,24 +291,43 @@ export const productService = {
   },
 
   // Get products with filters applied
-  getFilteredProducts: async ({ search = '', categories = [], colors = [], sizes = [], maxPrice = 500, sortBy = 'featured' } = {}) => {
+  getFilteredProducts: async ({
+    search = '',
+    gender = '',
+    categories = [],
+    colors = [],
+    sizes = [],
+    minPrice = 0,
+    maxPrice = 2000,
+    onSale = false,
+    isNewArrival = false,
+    isFeatured = false,
+    inStockOnly = false,
+    sortBy = 'featured'
+  } = {}) => {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      if (gender) params.set('gender', gender);
       if (categories.length > 0) params.set('category', categories.join(','));
       if (colors.length > 0) params.set('color', colors.join(','));
       if (sizes.length > 0) params.set('size', sizes.join(','));
-      if (maxPrice && maxPrice < 500) params.set('maxPrice', maxPrice);
+      if (minPrice > 0) params.set('minPrice', minPrice);
+      if (maxPrice && maxPrice < 2000) params.set('maxPrice', maxPrice);
+      if (onSale) params.set('onSale', 'true');
+      if (isNewArrival) params.set('isNewArrival', 'true');
+      if (isFeatured) params.set('isFeatured', 'true');
+      if (inStockOnly) params.set('inStockOnly', 'true');
       if (sortBy && sortBy !== 'featured') params.set('sortBy', sortBy);
 
       const res = await apiRequest(`/products?${params.toString()}`);
       if (Array.isArray(res) && res.length > 0) return res;
       
-      // If API returns 0 products due to DB state, fall back to sample dataset with filters
-      return filterSampleProducts({ search, categories, colors, sizes, maxPrice, sortBy });
+      // Fall back to sample dataset with filters
+      return filterSampleProducts({ search, gender, categories, colors, sizes, minPrice, maxPrice, onSale, isNewArrival, inStockOnly, sortBy });
     } catch (err) {
       console.warn('API error fetching filtered products, using fallback catalog:', err.message);
-      return filterSampleProducts({ search, categories, colors, sizes, maxPrice, sortBy });
+      return filterSampleProducts({ search, gender, categories, colors, sizes, minPrice, maxPrice, onSale, isNewArrival, inStockOnly, sortBy });
     }
   },
 

@@ -26,11 +26,46 @@ export const handlePaystackWebhook = async (req, res) => {
     console.log(`Processing successful payment webhook for reference: ${reference}`);
 
     try {
-      // 3. Prevent duplicate order creations
-      const existingOrder = await query('SELECT id FROM orders WHERE payment_reference = ?', [reference]);
+      // 3. Check existing order and status to ensure idempotency
+      const existingOrder = await query('SELECT id, status FROM orders WHERE payment_reference = ?', [reference]);
       if (existingOrder.length > 0) {
-        console.log(`Order with payment reference ${reference} already exists in database. Skipping.`);
-        return res.status(200).json({ message: 'Order already exists' });
+        const currentStatus = existingOrder[0].status;
+        const lowerStatus = String(currentStatus || '').toLowerCase();
+        const processedStatuses = ['paid', 'processing', 'shipped', 'delivered'];
+
+        if (processedStatuses.includes(lowerStatus)) {
+          console.log(`Order with reference ${reference} already exists in DB with status '${currentStatus}'. Skipping webhook duplicate execution.`);
+          return res.status(200).json({ status: 'success', message: 'Order already processed' });
+        }
+
+        // NOTE: Webhook recovery for pending orders updates status to 'Processing' and decrements stock using payload metadata; server-side price reverification is performed during initial order creation.
+        if (lowerStatus === 'pending') {
+          const orderId = existingOrder[0].id;
+          const conn = await pool.getConnection();
+          await conn.beginTransaction();
+
+          try {
+            await conn.execute('UPDATE orders SET status = ? WHERE id = ?', ['Processing', orderId]);
+
+            const metadata = event.data?.metadata;
+            const items = metadata?.items || [];
+            for (const item of items) {
+              await conn.execute(
+                'UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?',
+                [item.quantity, item.id]
+              );
+            }
+
+            await conn.commit();
+            conn.release();
+            console.log(`Updated pending order BTQ-${orderId} to Processing via webhook.`);
+            return res.status(200).json({ status: 'success', message: 'Pending order updated to Processing' });
+          } catch (pendingErr) {
+            await conn.rollback();
+            conn.release();
+            throw pendingErr;
+          }
+        }
       }
 
       // 4. Retrieve metadata parameters

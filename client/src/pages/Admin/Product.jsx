@@ -18,9 +18,13 @@ const Product = () => {
     name: '',
     description: '',
     price: '',
+    salePrice: '',
+    gender: 'unisex',
     category: '',
     imageUrl: '',
     stockQuantity: 50,
+    isFeatured: false,
+    isNewArrival: false,
     sizes: [],
     colors: []
   });
@@ -52,9 +56,13 @@ const Product = () => {
       name: '',
       description: '',
       price: '',
+      salePrice: '',
+      gender: 'unisex',
       category: '',
       imageUrl: '',
       stockQuantity: 50,
+      isFeatured: false,
+      isNewArrival: false,
       sizes: [],
       colors: []
     });
@@ -69,9 +77,13 @@ const Product = () => {
       name: product.name,
       description: product.description || '',
       price: product.price,
+      salePrice: product.sale_price ?? '',
+      gender: product.gender || 'unisex',
       category: product.category,
       imageUrl: product.image,
       stockQuantity: product.stock_quantity ?? 50,
+      isFeatured: Boolean(product.is_featured),
+      isNewArrival: Boolean(product.is_new_arrival),
       sizes: product.sizes || [],
       colors: product.colors || []
     });
@@ -81,8 +93,8 @@ const Product = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSizeToggle = (size) => {
@@ -107,6 +119,7 @@ const Product = () => {
     const productData = {
       ...formData,
       price: Number(formData.price),
+      salePrice: formData.salePrice !== '' ? Number(formData.salePrice) : null,
       stockQuantity: Number(formData.stockQuantity),
       colors
     };
@@ -295,17 +308,33 @@ const Product = () => {
 
                 <div className="form-row">
                   <div className="form-group">
+                    <label>Department / Gender <span className="text-danger">*</span></label>
+                    <select 
+                      name="gender" 
+                      value={formData.gender} 
+                      onChange={handleInputChange} 
+                      required
+                    >
+                      <option value="women">Women</option>
+                      <option value="men">Men</option>
+                      <option value="unisex">Unisex</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
                     <label>Category <span className="text-danger">*</span></label>
                     <input 
                       name="category" 
                       value={formData.category} 
                       onChange={handleInputChange} 
-                      placeholder="e.g. Outerwear" 
+                      placeholder="e.g. Dresses, Shirts, Shoes" 
                       required 
                     />
                   </div>
+                </div>
+
+                <div className="form-row">
                   <div className="form-group">
-                    <label>Price (GH₵ GHS) <span className="text-danger">*</span></label>
+                    <label>Regular Price (GH₵) <span className="text-danger">*</span></label>
                     <input 
                       name="price" 
                       type="number" 
@@ -313,8 +342,20 @@ const Product = () => {
                       min="0.01" 
                       value={formData.price} 
                       onChange={handleInputChange} 
-                      placeholder="e.g. 149.99" 
+                      placeholder="e.g. 299.99" 
                       required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Sale Price (GH₵, optional)</label>
+                    <input 
+                      name="salePrice" 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      value={formData.salePrice} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. 249.99" 
                     />
                   </div>
                   <div className="form-group">
@@ -329,6 +370,28 @@ const Product = () => {
                       required 
                     />
                   </div>
+                </div>
+
+                <div className="form-row" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+                  <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      name="isFeatured" 
+                      checked={formData.isFeatured} 
+                      onChange={handleInputChange} 
+                    />
+                    <span>Featured Product (Showcase on Home)</span>
+                  </label>
+
+                  <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginLeft: '1.5rem' }}>
+                    <input 
+                      type="checkbox" 
+                      name="isNewArrival" 
+                      checked={formData.isNewArrival} 
+                      onChange={handleInputChange} 
+                    />
+                    <span>New Arrival Tag</span>
+                  </label>
                 </div>
 
                 <div className="form-group">

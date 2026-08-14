@@ -172,7 +172,7 @@ export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  const validStatuses = ['pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+  const validStatuses = ['pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
   if (!status || !validStatuses.includes(status)) {
     return res.status(400).json({ message: 'Invalid or missing order status' });
@@ -199,7 +199,7 @@ export const updateOrderStatus = async (req, res) => {
 // @route   POST /api/admin/products
 // @access  Private/Admin
 export const addProduct = async (req, res) => {
-  const { name, description, price, category, imageUrl, sizes, colors, stockQuantity } = req.body;
+  const { name, description, price, salePrice, gender, category, imageUrl, sizes, colors, stockQuantity, isFeatured, isNewArrival } = req.body;
 
   if (!name || !price || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
@@ -209,11 +209,15 @@ export const addProduct = async (req, res) => {
     const sizesJson = sizes ? JSON.stringify(sizes) : '[]';
     const colorsJson = colors ? JSON.stringify(colors) : '[]';
     const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
+    const sale = salePrice !== undefined && salePrice !== null && salePrice !== '' ? Number(salePrice) : null;
+    const prodGender = gender ? gender.toLowerCase() : 'unisex';
+    const featured = isFeatured ? 1 : 0;
+    const newArrival = isNewArrival ? 1 : 0;
 
     const result = await query(
-      `INSERT INTO products (name, description, price, category, image_url, sizes, colors, stock_quantity)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson, stock]
+      `INSERT INTO products (name, description, price, sale_price, gender, category, image_url, sizes, colors, stock_quantity, is_featured, is_new_arrival)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, description || '', Number(price), sale, prodGender, category, imageUrl, sizesJson, colorsJson, stock, featured, newArrival]
     );
 
     res.status(201).json({
@@ -221,6 +225,8 @@ export const addProduct = async (req, res) => {
       id: result.insertId,
       name,
       price: Number(price),
+      sale_price: sale,
+      gender: prodGender,
       category,
       stockQuantity: stock
     });
@@ -235,7 +241,7 @@ export const addProduct = async (req, res) => {
 // @access  Private/Admin
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, category, imageUrl, sizes, colors, stockQuantity, isArchived } = req.body;
+  const { name, description, price, salePrice, gender, category, imageUrl, sizes, colors, stockQuantity, isArchived, isFeatured, isNewArrival } = req.body;
 
   if (!name || !price || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
@@ -246,12 +252,16 @@ export const updateProduct = async (req, res) => {
     const colorsJson = colors ? JSON.stringify(colors) : '[]';
     const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
     const archived = isArchived !== undefined ? (isArchived ? 1 : 0) : 0;
+    const sale = salePrice !== undefined && salePrice !== null && salePrice !== '' ? Number(salePrice) : null;
+    const prodGender = gender ? gender.toLowerCase() : 'unisex';
+    const featured = isFeatured ? 1 : 0;
+    const newArrival = isNewArrival ? 1 : 0;
 
     const result = await query(
       `UPDATE products 
-       SET name = ?, description = ?, price = ?, category = ?, image_url = ?, sizes = ?, colors = ?, stock_quantity = ?, is_archived = ? 
+       SET name = ?, description = ?, price = ?, sale_price = ?, gender = ?, category = ?, image_url = ?, sizes = ?, colors = ?, stock_quantity = ?, is_archived = ?, is_featured = ?, is_new_arrival = ? 
        WHERE id = ?`,
-      [name, description || '', Number(price), category, imageUrl, sizesJson, colorsJson, stock, archived, id]
+      [name, description || '', Number(price), sale, prodGender, category, imageUrl, sizesJson, colorsJson, stock, archived, featured, newArrival, id]
     );
 
     if (result.affectedRows === 0) {
