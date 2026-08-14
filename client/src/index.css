@@ -3547,11 +3547,11 @@ body {
 @media (max-width: 767px) {
   /* Hero Section */
   .hero-content h1 {
-    font-size: 2.5rem !important;
+    font-size: 2.2rem !important;
     line-height: 1.15 !important;
   }
   .hero-content p {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
   }
   .hero-actions {
     flex-direction: column;
@@ -3562,13 +3562,95 @@ body {
     justify-content: center;
   }
 
-  /* Product Cards & Grid */
+  /* SIDEWAYS HORIZONTAL PRODUCT SCROLLING FOR SMALL DEVICES */
   .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 0.85rem !important;
+    padding-bottom: 1rem !important;
+    padding-left: 0.25rem !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
-  .product-card-info h3 {
-    font-size: 0.95rem;
+  .product-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+  .product-grid::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+  }
+
+  /* Compact Product Cards for Sideways Layout */
+  .product-card {
+    flex: 0 0 160px !important;
+    min-width: 160px !important;
+    max-width: 170px !important;
+    scroll-snap-align: start;
+    border-radius: 12px !important;
+  }
+  .product-image-container {
+    aspect-ratio: 1/1 !important;
+  }
+  .product-info {
+    padding: 0.75rem !important;
+  }
+  .product-name {
+    font-size: 0.85rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .product-price {
+    font-size: 0.9rem !important;
+  }
+  .product-overlay {
+    bottom: 0 !important;
+    padding: 0.4rem !important;
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.85), transparent) !important;
+  }
+  .add-to-cart-btn {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* HORIZONTAL FOOTER LAYOUT FOR SMALL DEVICES */
+  .footer-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 1.5rem !important;
+    text-align: left !important;
+  }
+  .footer-brand {
+    flex: 1 1 100% !important;
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand .footer-description {
+    max-width: 100% !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .footer-links-col {
+    flex: 1 1 45% !important;
+    min-width: 120px !important;
+  }
+  .footer-newsletter {
+    flex: 1 1 100% !important;
+    margin-top: 1rem;
+  }
+  .footer-bottom {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    text-align: left !important;
+    font-size: 0.8rem !important;
   }
 
   /* Cart Drawer */
@@ -3616,8 +3698,8 @@ body {
     font-size: 14px;
   }
   .product-section, .shop-container, .cart-page-container, .checkout-container, .admin-dashboard-page {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 
   /* Navbar */
@@ -3632,9 +3714,19 @@ body {
     height: 38px !important;
   }
 
-  /* Single Column Product Grid for Ultra Small Screens */
+  /* Sideways horizontal product layout maintained on tiny screens with compact card width */
   .product-grid {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 0.75rem !important;
+  }
+  .product-card {
+    flex: 0 0 145px !important;
+    min-width: 145px !important;
+    max-width: 155px !important;
   }
 
   /* Stepper Bar for Checkout */
@@ -3642,14 +3734,14 @@ body {
     gap: 0.5rem !important;
   }
   .step-label {
-    display: none; /* Hide text label on tiny screens, show step number */
+    display: none;
   }
 
   /* Buttons & Tap Targets */
   .btn-primary, .btn-secondary {
     padding: 0.75rem 1.25rem !important;
-    font-size: 0.9rem !important;
-    min-height: 44px; /* Touch-friendly tap target */
+    font-size: 0.85rem !important;
+    min-height: 44px;
   }
 
   /* Admin Coupon Form */
@@ -3660,14 +3752,18 @@ body {
     width: 100% !important;
   }
 
-  /* Footer Links */
+  /* Footer Horizontal Layout maintained */
   .footer-grid {
-    grid-template-columns: 1fr !important;
-    gap: 2rem !important;
-    text-align: center;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 1.25rem !important;
+    text-align: left !important;
   }
-  .footer-socials {
-    justify-content: center;
+  .footer-links-col {
+    flex: 1 1 45% !important;
   }
 }
 
