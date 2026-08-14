@@ -36,9 +36,9 @@ services:
       DB_PASSWORD: rootpassword
       DB_NAME: ecommerce_boutique
       DB_PORT: 3306
-      JWT_SECRET: super_secret_jwt_key_boutique_2026
-      PAYSTACK_SECRET: ${PAYSTACK_SECRET:-your_paystack_secret_key_here}
-      CLIENT_URL: http://localhost
+      JWT_SECRET: ${JWT_SECRET}
+      PAYSTACK_SECRET: ${PAYSTACK_SECRET}
+      CLIENT_URL: ${CLIENT_URL}
     depends_on:
       db:
         condition: service_healthy

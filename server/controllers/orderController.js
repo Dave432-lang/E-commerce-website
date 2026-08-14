@@ -44,6 +44,24 @@ export const createOrder = async (req, res) => {
     await conn.beginTransaction();
 
     try {
+      // Stock Availability Verification
+      for (const item of items) {
+        const [prodRows] = await conn.execute(
+          'SELECT name, stock_quantity FROM products WHERE id = ? FOR UPDATE',
+          [item.id]
+        );
+        if (prodRows && prodRows.length > 0) {
+          const currentStock = prodRows[0].stock_quantity;
+          if (currentStock < item.quantity) {
+            await conn.rollback();
+            conn.release();
+            return res.status(400).json({
+              message: `Insufficient stock for "${prodRows[0].name}". Available stock: ${currentStock}`
+            });
+          }
+        }
+      }
+
       // Insert into orders table including payment_reference
       const [orderResult] = await conn.execute(
         'INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, payment_reference) VALUES (?, ?, ?, ?, ?, ?)',
@@ -52,11 +70,16 @@ export const createOrder = async (req, res) => {
       
       const orderId = orderResult.insertId;
 
-      // Insert into order_items table for each item
+      // Insert into order_items table and decrement stock atomically for each item
       for (const item of items) {
         await conn.execute(
           'INSERT INTO order_items (order_id, product_id, quantity, selected_size, selected_color, price_at_time) VALUES (?, ?, ?, ?, ?, ?)',
           [orderId, item.id, item.quantity, item.size || 'M', item.color || 'Default', item.price]
+        );
+
+        await conn.execute(
+          'UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?',
+          [item.quantity, item.id]
         );
       }
 

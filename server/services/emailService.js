@@ -21,7 +21,7 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 const FROM_EMAIL = process.env.EMAIL_FROM || '"Ecommerce Boutique" <noreply@ecommerceboutique.com>';
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const CLIENT_URL = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://ecommerceboutique.com' : 'http://localhost:5173');
 
 export const emailService = {
   /**
@@ -110,7 +110,7 @@ export const emailService = {
           ${item.color ? `<small style="color: #6b7280;"> | Color: ${item.color}</small>` : ''}
         </td>
         <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6; text-align: center;">${item.quantity}</td>
-        <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">$${(Number(item.price) * item.quantity).toFixed(2)}</td>
+        <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">GH₵${(Number(item.price) * item.quantity).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -152,7 +152,7 @@ export const emailService = {
                 ${itemsHtml}
                 <tr class="total-row">
                   <td colspan="2" style="padding-top: 16px;">Total Amount Paid</td>
-                  <td style="padding-top: 16px; text-align: right;">$${Number(order.total_price || order.totalAmount).toFixed(2)}</td>
+                  <td style="padding-top: 16px; text-align: right;">GH₵${Number(order.total_price || order.totalAmount).toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>

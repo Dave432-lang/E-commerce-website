@@ -128,13 +128,6 @@ const runMigrations = async () => {
       `);
       console.log('Successfully seeded default promo coupons (WELCOME10, BOUTIQUE20, SAVE15).');
     }
-
-    // 7. Update admin user seed password hash (to standard 'admin123') if it has placeholder
-    await query(`
-      UPDATE users 
-      SET password_hash = '$2a$10$tZ8.sM1M7l67yA.E1P3FteS.J8L2F250nZ0Uf.n2e.32l42o3FbeW' 
-      WHERE email = 'admin@boutique.com' AND password_hash = 'hashed_password_placeholder'
-    `);
   } catch (err) {
     console.error('Database migration error:', err);
   }

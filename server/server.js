@@ -18,7 +18,11 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigin = process.env.CLIENT_URL;
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' && allowedOrigin ? allowedOrigin : true,
+  credentials: true
+}));
 app.use(express.json({
   verify: (req, res, buf) => {
     req.rawBody = buf.toString();
@@ -36,8 +40,11 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
 
-// Test DB Connection Route
+// Test DB Connection Route (Development Only)
 app.get('/api/test-db', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ message: 'Endpoint unavailable in production environment' });
+  }
   try {
     const rows = await query('SELECT NOW() AS now');
     res.json({ message: 'Database connected successfully!', time: rows[0].now });

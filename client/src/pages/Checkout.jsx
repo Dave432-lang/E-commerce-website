@@ -105,6 +105,12 @@ const Checkout = () => {
     setError('');
     setIsSubmitting(true);
 
+    if (!window.PaystackPop || typeof window.PaystackPop.setup !== 'function') {
+      setIsSubmitting(false);
+      setError('Unable to load Paystack payment gateway. Please check your internet connection or disable ad-blockers, then refresh.');
+      return;
+    }
+
     try {
       // Paystack inline integration setup
       const handler = window.PaystackPop.setup({

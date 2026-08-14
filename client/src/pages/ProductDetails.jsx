@@ -41,6 +41,9 @@ const ProductDetails = () => {
           productService.getAllProducts()
         ]);
         setProduct(productData);
+        if (productData?.name) {
+          document.title = `${productData.name} - Ecommerce Boutique`;
+        }
         setReviews(reviewsData);
         if (productData.sizes && productData.sizes.length > 0) {
           setSelectedSize(productData.sizes[0]);

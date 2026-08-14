@@ -59,6 +59,11 @@ export const handlePaystackWebhook = async (req, res) => {
             'INSERT INTO order_items (order_id, product_id, quantity, selected_size, selected_color, price_at_time) VALUES (?, ?, ?, ?, ?, ?)',
             [orderId, item.id, item.quantity, item.size || 'M', item.color || 'Default', item.price]
           );
+
+          await conn.execute(
+            'UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?',
+            [item.quantity, item.id]
+          );
         }
 
         await conn.commit();
