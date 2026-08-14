@@ -136,7 +136,7 @@ const Cart = () => {
                 <span style={{ fontWeight: 600, color: 'var(--text)' }}>${cartTotal.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '1rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Shipping</span>
+                <span style={{ color: 'var(--text-muted)' }}>Delivery</span>
                 <span style={{ color: '#10b981', fontWeight: 600 }}>Free</span>
               </div>
 

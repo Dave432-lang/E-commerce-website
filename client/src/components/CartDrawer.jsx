@@ -92,7 +92,7 @@ const CartDrawer = () => {
             <span>Subtotal</span>
             <span>${cartTotal.toFixed(2)}</span>
           </div>
-          <p className="cart-tax-note">Taxes and shipping calculated at checkout</p>
+          <p className="cart-tax-note">Taxes and delivery calculated at checkout</p>
           <button className="btn-primary checkout-btn" disabled={cartItems.length === 0} onClick={handleCheckout}>
             Checkout
           </button>

@@ -83,7 +83,7 @@ const Checkout = () => {
   const nextStep = () => {
     if (step === 1) {
       if (!formData.address || !formData.city || !formData.phone || !formData.region) {
-        setError('Please fill in all shipping fields');
+        setError('Please fill in all delivery fields');
         return;
       }
       const cleanPhone = formData.phone.replace(/[\s\-\(\)\+]/g, '');
@@ -202,7 +202,7 @@ const Checkout = () => {
           <div className="checkout-stepper">
             <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
               <div className="step-number">{step > 1 ? <CheckCircle size={18} /> : 1}</div>
-              <span>Shipping</span>
+              <span>Delivery</span>
             </div>
             <div className="step-connector" />
             <div className={`step ${step >= 2 ? 'active' : ''}`}>
@@ -218,7 +218,7 @@ const Checkout = () => {
               <div className="shipping-step">
                 <div className="step-header">
                   <MapPin size={24} />
-                  <h2>Shipping Information (Delivery within Ghana Only)</h2>
+                  <h2>Delivery Information (Within Ghana Only)</h2>
                 </div>
                 <form className="checkout-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
                   <div className="form-row">
@@ -283,7 +283,7 @@ const Checkout = () => {
 
                 <div className="review-summary-block">
                   <div className="review-section">
-                    <h4>Shipping Address</h4>
+                    <h4>Delivery Address</h4>
                     <p><b>{formData.firstName} {formData.lastName}</b></p>
                     <p>{formData.address}, {formData.city}</p>
                     <p>{formData.region} Region, Ghana</p>
@@ -309,7 +309,7 @@ const Checkout = () => {
 
                 <div className="step-actions">
                   <button className="btn-secondary" onClick={prevStep} disabled={isSubmitting}>
-                    <ArrowLeft size={18} /> Back to Shipping
+                    <ArrowLeft size={18} /> Back to Delivery
                   </button>
                   
                   <button 
@@ -392,7 +392,7 @@ const Checkout = () => {
                 </div>
               )}
               <div className="summary-row">
-                <span>Shipping</span>
+                <span>Delivery</span>
                 <span className="free-shipping-text" style={{ color: '#10b981', fontWeight: 600 }}>Free</span>
               </div>
               <div className="summary-row total">

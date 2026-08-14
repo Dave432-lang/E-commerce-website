@@ -269,7 +269,7 @@ const ProductDetails = () => {
           )}
 
           <div className="product-meta">
-            <p><strong>Free Shipping</strong> on all orders within Ghana</p>
+            <p><strong>Free Delivery</strong> on all orders within Ghana</p>
             <p><strong>Returns:</strong> Accepted within 30 days</p>
           </div>
         </div>

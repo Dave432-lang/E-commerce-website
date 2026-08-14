@@ -57,7 +57,7 @@ const Orders = () => {
       <div className="admin-page-header">
         <div>
           <h1>Customer Orders</h1>
-          <p className="admin-page-subtitle">Track payments, shipping details, and update fulfillment statuses</p>
+          <p className="admin-page-subtitle">Track payments, delivery details, and update fulfillment statuses</p>
         </div>
       </div>
 
