@@ -129,26 +129,33 @@ describe('Security & Price Verification Tests', () => {
 
     const existingOrderId = insertRes.insertId;
 
-    // Simulate Paystack Webhook receiving same payment reference
+    const payload = JSON.stringify({
+      event: 'charge.success',
+      data: {
+        reference: dupRef,
+        amount: 20000,
+        channel: 'card',
+        metadata: {
+          userId: testUserId,
+          shippingAddress: 'Kumasi, Ghana',
+          items: [{ id: testProductId, quantity: 1, price: 200 }]
+        }
+      }
+    });
+
+    const secret = process.env.PAYSTACK_SECRET || 'sk_test_mock_paystack_secret_key_2026';
+    const hash = crypto.createHmac('sha512', secret).update(payload).digest('hex');
+
+    // Simulate Paystack Webhook receiving duplicate payment reference with valid signature
     const webhookRes = await request(app)
       .post('/api/payments/webhook')
-      .set('x-paystack-signature', 'invalid_signature_handled')
-      .send({
-        event: 'charge.success',
-        data: {
-          reference: dupRef,
-          amount: 20000,
-          channel: 'card',
-          metadata: {
-            userId: testUserId,
-            shippingAddress: 'Kumasi, Ghana',
-            items: [{ id: testProductId, quantity: 1, price: 200 }]
-          }
-        }
-      });
+      .set('x-paystack-signature', hash)
+      .set('Content-Type', 'application/json')
+      .send(payload);
 
-    // Webhook fails signature verification gracefully with 401, or handles idempotency
-    expect([200, 401]).toContain(webhookRes.statusCode);
+    // Webhook handles idempotency and returns HTTP 200 without duplicate processing
+    expect(webhookRes.statusCode).toEqual(200);
+    expect(webhookRes.body.message).toContain('already processed');
 
     // Clean up
     await query('DELETE FROM orders WHERE id = ?', [existingOrderId]);
