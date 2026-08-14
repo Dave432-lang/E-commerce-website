@@ -23,7 +23,7 @@ export const updateDeliveryFee = async (req, res) => {
   const { fee, estimated_delivery, is_active } = req.body;
 
   if (fee === undefined || isNaN(Number(fee)) || Number(fee) < 0) {
-    return res.status(400).json({ message: 'Valid delivery fee amount is required' });
+    return res.status(400).json({ message: 'Valid non-negative delivery fee amount is required' });
   }
 
   try {
@@ -36,5 +36,43 @@ export const updateDeliveryFee = async (req, res) => {
   } catch (error) {
     console.error('Error updating delivery fee:', error);
     res.status(500).json({ message: 'Server Error updating delivery fee' });
+  }
+};
+
+// @desc    Add a new regional delivery fee (Admin only)
+// @route   POST /api/delivery/fees
+// @access  Private/Admin
+export const createDeliveryFee = async (req, res) => {
+  const { region_name, fee, estimated_delivery } = req.body;
+
+  if (!region_name || typeof region_name !== 'string' || !region_name.trim()) {
+    return res.status(400).json({ message: 'Region name is required' });
+  }
+
+  if (fee === undefined || isNaN(Number(fee)) || Number(fee) < 0) {
+    return res.status(400).json({ message: 'Valid non-negative delivery fee amount is required' });
+  }
+
+  try {
+    const cleanRegion = region_name.trim();
+    
+    // Check for duplicate region name
+    const existing = await query('SELECT id FROM delivery_fees WHERE region_name = ?', [cleanRegion]);
+    if (existing.length > 0) {
+      return res.status(400).json({ message: `Delivery fee for region '${cleanRegion}' already exists` });
+    }
+
+    const result = await query(
+      'INSERT INTO delivery_fees (region_name, fee, estimated_delivery, is_active) VALUES (?, ?, ?, 1)',
+      [cleanRegion, Number(fee), estimated_delivery || '2-3 Business Days']
+    );
+
+    res.status(201).json({ 
+      message: 'Regional delivery fee added successfully',
+      id: result.insertId
+    });
+  } catch (error) {
+    console.error('Error creating delivery fee:', error);
+    res.status(500).json({ message: 'Server Error creating delivery fee' });
   }
 };

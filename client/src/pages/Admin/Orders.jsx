@@ -48,7 +48,7 @@ const Orders = () => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  const validStatuses = ['pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+  const validStatuses = ['pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
   if (loading && orders.length === 0) return <Loader />;
 
