@@ -204,27 +204,88 @@ const Checkout = () => {
     }
   };
 
+  const handleSimulatePayment = async () => {
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const mockRef = 'SIM-' + Math.floor(Math.random() * 1000000000 + 1);
+      const orderResponse = await orderService.createOrder({
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color
+        })),
+        totalAmount: finalTotal,
+        shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+        region: formData.region,
+        city: formData.city,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        paymentReference: mockRef,
+        paymentMethod: 'Test Simulation (Dev Mode)'
+      });
+
+      setCreatedOrderId(orderResponse.orderId);
+      setIsOrderPlaced(true);
+      setCartItems([]);
+    } catch (err) {
+      console.error('Simulated Payment Error:', err);
+      setError(err.message || 'Simulated payment failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isPlaceholderKey = !import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('d3c3332152861c8a514d7a8f15d22bf5716dfbc2') || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('your_paystack_public_key');
+
   if (cartItems.length === 0 && !isOrderPlaced) {
     return (
-      <div className="empty-checkout">
-        <ShoppingBag size={64} />
-        <h2>Your cart is empty</h2>
-        <p>Add some premium apparel before checking out.</p>
-        <Link to="/shop" className="btn-primary">Back to Shop</Link>
+      <div className="checkout-page empty-checkout">
+        <div className="empty-cart-card">
+          <ShoppingBag size={48} className="icon-muted" />
+          <h2>Your Cart is Empty</h2>
+          <p>Add some stylish Ghanaian apparel to your cart before checking out.</p>
+          <Link to="/shop" className="btn-primary">
+            Explore Collection
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (isOrderPlaced) {
     return (
-      <div className="order-success-page">
-        <CheckCircle size={80} className="success-icon" />
-        <h1>Order Placed Successfully!</h1>
-        <p>Thank you for shopping with Boutique. Your order number is <b>#{createdOrderId}</b></p>
-        <p>We've sent a confirmation email to <b>{formData.email}</b></p>
-        <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <Link to="/profile" className="btn-primary">View My Orders</Link>
-          <Link to="/" className="btn-secondary">Return to Home</Link>
+      <div className="checkout-page order-success-page">
+        <div className="success-card">
+          <div className="success-icon-wrapper">
+            <CheckCircle size={56} className="icon-success" />
+          </div>
+          <h2>Order Confirmed!</h2>
+          <p className="order-number">Order ID: <span>#{createdOrderId}</span></p>
+          <p className="success-message">
+            Thank you for shopping with us! We have received your payment and your order is currently being processed for delivery to <strong>{formData.city}, {formData.region} Region</strong>.
+          </p>
+
+          <div className="order-next-steps">
+            <div className="step-item">
+              <Truck size={20} />
+              <div>
+                <strong>Estimated Delivery:</strong>
+                <p>1 - 3 Business Days via Local Express Delivery</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="success-actions">
+            <Link to="/shop" className="btn-primary">
+              Continue Shopping
+            </Link>
+            <Link to="/profile" className="btn-secondary">
+              View Order History
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -232,90 +293,128 @@ const Checkout = () => {
 
   return (
     <div className="checkout-page">
-      <div className="checkout-container">
+      <div className="checkout-header">
+        <h1>Checkout</h1>
+        <div className="checkout-steps">
+          <div className={`step-badge ${step >= 1 ? 'active' : ''}`}>1. Delivery Info</div>
+          <ChevronRight size={16} />
+          <div className={`step-badge ${step >= 2 ? 'active' : ''}`}>2. Payment & Review</div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="error-banner">
+          <p>{error}</p>
+        </div>
+      )}
+
+      <div className="checkout-layout">
         <main className="checkout-main">
-          {/* Stepper */}
-          <div className="checkout-stepper">
-            <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-              <div className="step-number">{step > 1 ? <CheckCircle size={18} /> : 1}</div>
-              <span>Delivery</span>
-            </div>
-            <div className="step-connector" />
-            <div className={`step ${step >= 2 ? 'active' : ''}`}>
-              <div className="step-number">2</div>
-              <span>Payment & Review</span>
-            </div>
-          </div>
-
-          {error && <div className="auth-error" style={{ marginBottom: '1.5rem' }}>{error}</div>}
-
-          <div className="step-content">
-            {step === 1 ? (
-              <div className="shipping-step">
-                <div className="step-header">
-                  <MapPin size={24} />
-                  <h2>Delivery Information (Within Ghana Only)</h2>
-                </div>
-                <form className="checkout-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+          <div className="checkout-card">
+            {step === 1 && (
+              <div className="step-content">
+                <h3>Delivery Information</h3>
+                <form className="delivery-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
                   <div className="form-row">
                     <div className="form-group">
                       <label>First Name</label>
-                      <input name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="John" required />
+                      <input 
+                        type="text" 
+                        name="firstName" 
+                        value={formData.firstName} 
+                        onChange={handleInputChange}
+                        required 
+                      />
                     </div>
                     <div className="form-group">
                       <label>Last Name</label>
-                      <input name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Doe" required />
+                      <input 
+                        type="text" 
+                        name="lastName" 
+                        value={formData.lastName} 
+                        onChange={handleInputChange}
+                        required 
+                      />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>Email Address</label>
-                    <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" required />
-                  </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Country</label>
-                      <input name="country" value="Ghana" disabled className="disabled-input" />
+                      <label>Email Address</label>
+                      <input 
+                        type="email" 
+                        name="email" 
+                        value={formData.email} 
+                        onChange={handleInputChange}
+                        required 
+                      />
                     </div>
                     <div className="form-group">
-                      <label>Ghana Region</label>
-                      <select name="region" value={formData.region} onChange={handleInputChange} required className="region-select">
+                      <label>Phone Number (Mobile Money / Contact)</label>
+                      <input 
+                        type="tel" 
+                        name="phone" 
+                        placeholder="e.g. 0540001122" 
+                        value={formData.phone} 
+                        onChange={handleInputChange}
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Street Address / Digital Address (Ghana Post GPS)</label>
+                    <input 
+                      type="text" 
+                      name="address" 
+                      placeholder="e.g. GA-123-4567, Oxford Street" 
+                      value={formData.address} 
+                      onChange={handleInputChange}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>City / Town</label>
+                      <input 
+                        type="text" 
+                        name="city" 
+                        placeholder="e.g. Osu, East Legon, Kumasi" 
+                        value={formData.city} 
+                        onChange={handleInputChange}
+                        required 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Region</label>
+                      <select name="region" value={formData.region} onChange={handleInputChange}>
                         {ghanaRegions.map(reg => (
-                          <option key={reg} value={reg}>{reg} Region</option>
+                          <option key={reg} value={reg}>{reg}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  <div className="form-row">
-                    <div className="form-group" style={{ flex: 2 }}>
-                      <label>Address</label>
-                      <input name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Ring Road, Airport Residential Area" required />
-                    </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label>City / Town</label>
-                      <input name="city" value={formData.city} onChange={handleInputChange} placeholder="Accra" required />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Phone Number (Ghana Mobile)</label>
-                    <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="e.g. +233 24 123 4567 or 0241234567" required />
-                  </div>
-                  
                   <div className="step-actions">
-                    <button type="submit" className="btn-primary">
-                      Continue to Payment <ChevronRight size={18} />
+                    <button type="submit" className="btn-primary" style={{ width: '100%', padding: '0.9rem' }}>
+                      Proceed to Payment & Review
                     </button>
                   </div>
                 </form>
               </div>
-            ) : (
-              <div className="payment-step">
-                <div className="step-header">
-                  <CreditCard size={24} />
-                  <h2>Review & Secure Payment</h2>
-                </div>
+            )}
+
+            {step === 2 && (
+              <div className="step-content">
+                <h3>Review & Payment</h3>
+                
+                {isPlaceholderKey && (
+                  <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#eab308', lineHeight: '1.5' }}>
+                    <strong>Paystack Public Key Required:</strong> To test with live/test Paystack popups, add your Paystack Public Key (starts with <code>pk_test_</code> or <code>pk_live_</code>) to <code>client/.env</code> as <code>VITE_PAYSTACK_PUBLIC_KEY</code>.<br />
+                    <em>For local development without a key, click <strong>Simulate Test Payment</strong> below.</em>
+                  </div>
+                )}
 
                 <div className="review-summary-block">
                   <div className="review-section">
@@ -343,22 +442,34 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <div className="step-actions">
-                  <button className="btn-secondary" onClick={prevStep} disabled={isSubmitting}>
-                    <ArrowLeft size={18} /> Back to Delivery
-                  </button>
-                  
+                <div className="step-actions" style={{ flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                    <button className="btn-secondary" onClick={prevStep} disabled={isSubmitting}>
+                      <ArrowLeft size={18} /> Back
+                    </button>
+                    
+                    <button 
+                      className="btn-primary add-to-cart-large" 
+                      onClick={handlePaystackPayment} 
+                      disabled={isSubmitting}
+                      style={{ flex: 1, padding: '1rem' }}
+                    >
+                      {isSubmitting ? (
+                        <><Loader2 className="animate-spin" size={18} /> Verifying...</>
+                      ) : (
+                        <>Pay securely with Paystack (GH₵{finalTotal.toFixed(2)})</>
+                      )}
+                    </button>
+                  </div>
+
                   <button 
-                    className="btn-primary add-to-cart-large" 
-                    onClick={handlePaystackPayment} 
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleSimulatePayment}
                     disabled={isSubmitting}
-                    style={{ flex: 1, padding: '1rem' }}
+                    style={{ width: '100%', padding: '0.75rem', fontSize: '0.85rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}
                   >
-                    {isSubmitting ? (
-                      <><Loader2 className="animate-spin" size={18} /> Verifying Transaction...</>
-                    ) : (
-                      <>Pay securely with Paystack (GH₵{finalTotal.toFixed(2)})</>
-                    )}
+                    Simulate Test Payment (Dev Mode)
                   </button>
                 </div>
               </div>
