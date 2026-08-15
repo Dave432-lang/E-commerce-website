@@ -1,7 +1,16 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 const WhatsAppButton = () => {
+  const location = useLocation();
+  const { isCartOpen } = useCart();
+  const isCheckoutRoute = location.pathname === '/checkout';
+  
+  // Position on bottom-left if on checkout page OR if cart drawer is open
+  const positionOnLeft = isCheckoutRoute || isCartOpen;
+
   const phoneNumber = '233540001122'; // Ghana phone format
   const message = encodeURIComponent('Hello Boutique Ghana! I have an inquiry about a product/order.');
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
@@ -15,7 +24,8 @@ const WhatsAppButton = () => {
       style={{
         position: 'fixed',
         bottom: '24px',
-        right: '24px',
+        left: positionOnLeft ? '24px' : 'auto',
+        right: positionOnLeft ? 'auto' : '24px',
         backgroundColor: '#25D366',
         color: '#ffffff',
         borderRadius: '50px',
@@ -24,11 +34,11 @@ const WhatsAppButton = () => {
         alignItems: 'center',
         gap: '8px',
         boxShadow: '0 8px 24px rgba(37, 211, 102, 0.4)',
-        zIndex: 9999,
+        zIndex: 1500, // Below Cart Drawer (z-index: 2000)
         textDecoration: 'none',
         fontWeight: 600,
         fontSize: '0.9rem',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease'
+        transition: 'all 0.3s ease'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';

@@ -17,6 +17,7 @@ import {
   Loader2,
   Tag
 } from 'lucide-react';
+import { VisaLogo, MastercardLogo, MtnBadge, MtnMomoLogo, TelecelLogo, TigoLogo } from '../components/PaymentLogos';
 
 const Checkout = () => {
   const { cartItems, cartTotal, setIsCartOpen, setCartItems } = useCart();
@@ -40,17 +41,19 @@ const Checkout = () => {
   const [deliveryFeesList, setDeliveryFeesList] = useState([]);
 
   React.useEffect(() => {
+    let isMounted = true;
     const fetchFees = async () => {
       try {
         const fees = await orderService.getDeliveryFees();
-        if (Array.isArray(fees)) {
+        if (isMounted && Array.isArray(fees)) {
           setDeliveryFeesList(fees);
         }
       } catch (err) {
-        console.warn('Could not load dynamic regional delivery fees:', err.message);
+        // Fallback to static regional delivery fees table if API is temporarily unavailable
       }
     };
     fetchFees();
+    return () => { isMounted = false; };
   }, []);
 
   const [formData, setFormData] = useState({
@@ -155,6 +158,8 @@ const Checkout = () => {
   const handlePaystackPayment = () => {
     setError('');
 
+    if (!validatePaymentDetails()) return;
+
     if (isPlaceholderKey) {
       setError('A valid Paystack Public Key is required for live gateway popups. Please add your key to client/.env as VITE_PAYSTACK_PUBLIC_KEY, or click "Simulate Test Payment (Dev Mode)" below.');
       return;
@@ -211,8 +216,9 @@ const Checkout = () => {
   };
 
   const handleSimulatePayment = async () => {
-    setIsSubmitting(true);
     setError('');
+    if (!validatePaymentDetails()) return;
+    setIsSubmitting(true);
     try {
       const mockRef = 'SIM-' + Math.floor(Math.random() * 1000000000 + 1);
       const orderResponse = await orderService.createOrder({
@@ -247,6 +253,36 @@ const Checkout = () => {
   const isPlaceholderKey = !import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('d3c3332152861c8a514d7a8f15d22bf5716dfbc2') || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('your_paystack_public_key');
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  const [cardDetails, setCardDetails] = useState({
+    number: '',
+    expiry: '',
+    cvv: '',
+    name: ''
+  });
+  const [momoNumber, setMomoNumber] = useState('');
+
+  React.useEffect(() => {
+    if (formData.phone && !momoNumber) {
+      setMomoNumber(formData.phone);
+    }
+  }, [formData.phone]);
+
+  const validatePaymentDetails = () => {
+    if (selectedPaymentMethod === 'card') {
+      if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv) {
+        setError('Please fill in your card details (Card Number, Expiry Date, and CVV).');
+        return false;
+      }
+    } else {
+      const cleanPhone = momoNumber.replace(/[\s\-\(\)\+]/g, '');
+      if (!cleanPhone || cleanPhone.length < 9) {
+        const providerName = selectedPaymentMethod === 'mtn' ? 'MTN MoMo' : selectedPaymentMethod === 'telecel' ? 'Telecel' : 'AirtelTigo';
+        setError(`Please enter a valid ${providerName} mobile money phone number.`);
+        return false;
+      }
+    }
+    return true;
+  };
 
   if (cartItems.length === 0 && !isOrderPlaced) {
     return (
@@ -480,16 +516,14 @@ const Checkout = () => {
                   onClick={() => setSelectedPaymentMethod('card')}
                 >
                   <div className="payment-option-left">
-                    <div className="option-icon-box">
-                      <CreditCard size={20} />
-                    </div>
                     <div>
                       <p className="option-title">Card</p>
-                      <p className="option-subtitle">Visa · Mastercard</p>
+                      <p className="option-subtitle">Visa, Mastercard</p>
                     </div>
                   </div>
-                  <div className="selection-radio-circle">
-                    {selectedPaymentMethod === 'card' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  <div className="payment-option-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <VisaLogo />
+                    <MastercardLogo />
                   </div>
                 </div>
 
@@ -498,17 +532,15 @@ const Checkout = () => {
                   className={`payment-option-card ${selectedPaymentMethod === 'mtn' ? 'selected' : ''}`}
                   onClick={() => setSelectedPaymentMethod('mtn')}
                 >
-                  <div className="payment-option-left">
-                    <div className="option-icon-box">
-                      <Smartphone size={20} />
-                    </div>
+                  <div className="payment-option-left" style={{ display: 'flex', alignItems: 'center' }}>
+                    <MtnBadge />
                     <div>
-                      <p className="option-title">MTN MoMo</p>
+                      <p className="option-title">MTN Momo</p>
                       <p className="option-subtitle">Mobile Money</p>
                     </div>
                   </div>
-                  <div className="selection-radio-circle">
-                    {selectedPaymentMethod === 'mtn' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  <div className="payment-option-right">
+                    <MtnMomoLogo />
                   </div>
                 </div>
 
@@ -518,16 +550,13 @@ const Checkout = () => {
                   onClick={() => setSelectedPaymentMethod('telecel')}
                 >
                   <div className="payment-option-left">
-                    <div className="option-icon-box">
-                      <Smartphone size={20} />
-                    </div>
                     <div>
                       <p className="option-title">Telecel</p>
                       <p className="option-subtitle">Mobile Money</p>
                     </div>
                   </div>
-                  <div className="selection-radio-circle">
-                    {selectedPaymentMethod === 'telecel' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  <div className="payment-option-right">
+                    <TelecelLogo />
                   </div>
                 </div>
 
@@ -537,18 +566,118 @@ const Checkout = () => {
                   onClick={() => setSelectedPaymentMethod('airteltigo')}
                 >
                   <div className="payment-option-left">
-                    <div className="option-icon-box">
-                      <Smartphone size={20} />
-                    </div>
                     <div>
                       <p className="option-title">AirtelTigo</p>
                       <p className="option-subtitle">Mobile Money</p>
                     </div>
                   </div>
-                  <div className="selection-radio-circle">
-                    {selectedPaymentMethod === 'airteltigo' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  <div className="payment-option-right">
+                    <TigoLogo />
                   </div>
                 </div>
+              </div>
+
+              {/* Dynamic Payment Details Input Section */}
+              <div className="payment-input-container">
+                {selectedPaymentMethod === 'card' ? (
+                  <div className="payment-details-box animate-fade-in">
+                    <div className="payment-box-header">
+                      <CreditCard size={18} />
+                      <span>Enter Card Details</span>
+                    </div>
+                    <div className="form-group">
+                      <label>Card Number</label>
+                      <input
+                        type="text"
+                        name="number"
+                        placeholder="0000 0000 0000 0000"
+                        value={cardDetails.number}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                          setCardDetails(prev => ({ ...prev, number: val.slice(0, 19) }));
+                        }}
+                        maxLength={19}
+                      />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Expiry Date</label>
+                        <input
+                          type="text"
+                          name="expiry"
+                          placeholder="MM / YY"
+                          value={cardDetails.expiry}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/\D/g, '');
+                            if (val.length >= 3) {
+                              val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
+                            }
+                            setCardDetails(prev => ({ ...prev, expiry: val.slice(0, 5) }));
+                          }}
+                          maxLength={5}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>CVV / CVC</label>
+                        <input
+                          type="password"
+                          name="cvv"
+                          placeholder="123"
+                          value={cardDetails.cvv}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setCardDetails(prev => ({ ...prev, cvv: val }));
+                          }}
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Cardholder Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="e.g. Kwame Mensah"
+                        value={cardDetails.name}
+                        onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="payment-details-box animate-fade-in">
+                    <div className="payment-box-header">
+                      <Smartphone size={18} />
+                      <span>
+                        Enter {selectedPaymentMethod === 'mtn' ? 'MTN MoMo' : selectedPaymentMethod === 'telecel' ? 'Telecel Cash' : 'AirtelTigo Money'} Details
+                      </span>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>
+                        {selectedPaymentMethod === 'mtn' 
+                          ? 'MTN Mobile Money Number' 
+                          : selectedPaymentMethod === 'telecel' 
+                          ? 'Telecel Number' 
+                          : 'AirtelTigo Number'}
+                      </label>
+                      <input
+                        type="tel"
+                        name="momoNumber"
+                        placeholder={
+                          selectedPaymentMethod === 'mtn'
+                            ? 'Enter MTN MoMo number (e.g. 024XXXXXXX)'
+                            : selectedPaymentMethod === 'telecel'
+                            ? 'Enter Telecel number (e.g. 020XXXXXXX)'
+                            : 'Enter AirtelTigo number (e.g. 027XXXXXXX)'
+                        }
+                        value={momoNumber}
+                        onChange={(e) => setMomoNumber(e.target.value)}
+                      />
+                      <p className="payment-input-hint">
+                        An authorization prompt will be sent to this mobile money number to complete payment.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Encryption Footnote */}

@@ -8,7 +8,7 @@ export const apiRequest = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  // If there's a token, append it to headers (useful for auth later)
+  // If there's a token, append it to headers
   const token = localStorage.getItem('boutique_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -21,15 +21,26 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    const contentType = response.headers.get('content-type');
+    
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status} (${response.statusText})`);
+      }
+      data = { message: text };
+    }
     
     if (!response.ok) {
-      throw new Error(data.message || 'Something went wrong');
+      throw new Error(data?.message || 'Something went wrong');
     }
     
     return data;
   } catch (error) {
-    console.error(`API Error on ${endpoint}:`, error);
+    console.error(`API Error on ${endpoint}:`, error.message || error);
     throw error;
   }
 };
