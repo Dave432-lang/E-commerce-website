@@ -246,6 +246,8 @@ const Checkout = () => {
 
   const isPlaceholderKey = !import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('d3c3332152861c8a514d7a8f15d22bf5716dfbc2') || import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.includes('your_paystack_public_key');
 
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+
   if (cartItems.length === 0 && !isOrderPlaced) {
     return (
       <div className="checkout-page empty-checkout">
@@ -299,265 +301,337 @@ const Checkout = () => {
 
   return (
     <div className="checkout-page">
-      <div className="checkout-header">
-        <h1>Checkout</h1>
-        <div className="checkout-steps">
-          <div className={`step-badge ${step >= 1 ? 'active' : ''}`}>1. Delivery Info</div>
-          <ChevronRight size={16} />
-          <div className={`step-badge ${step >= 2 ? 'active' : ''}`}>2. Payment & Review</div>
+      {/* Top Header & Luxury Stepper */}
+      <div className="checkout-header-bar">
+        <div className="checkout-brand-logo">BOUTIQUE</div>
+        <div className="aurum-stepper">
+          <div className={`stepper-step ${step > 1 ? 'completed' : 'active'}`}>
+            <CheckCircle size={14} /> Cart
+          </div>
+          <div className="stepper-divider" />
+          <div className={`stepper-step ${step > 1 ? 'completed' : step === 1 ? 'active' : ''}`}>
+            <CheckCircle size={14} /> Delivery
+          </div>
+          <div className="stepper-divider" />
+          <div className={`stepper-step ${step === 2 ? 'active' : ''}`}>
+            <span>3</span> Payment
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="error-banner">
+        <div className="error-banner" style={{ marginBottom: '1.5rem' }}>
           <p>{error}</p>
         </div>
       )}
 
-      <div className="checkout-layout">
-        <main className="checkout-main">
-          <div className="checkout-card">
-            {step === 1 && (
-              <div className="step-content">
-                <h3>Delivery Information</h3>
-                <form className="delivery-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>First Name</label>
-                      <input 
-                        type="text" 
-                        name="firstName" 
-                        value={formData.firstName} 
-                        onChange={handleInputChange}
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Last Name</label>
-                      <input 
-                        type="text" 
-                        name="lastName" 
-                        value={formData.lastName} 
-                        onChange={handleInputChange}
-                        required 
-                      />
-                    </div>
-                  </div>
+      <div className="checkout-layout-grid">
+        <main className="checkout-card-main">
+          {step === 1 && (
+            <div className="step-content">
+              <div className="checkout-title-group">
+                <div className="title-icon-wrapper">
+                  <MapPin size={22} />
+                </div>
+                <div>
+                  <h1 className="checkout-main-title">Delivery <span>information</span></h1>
+                  <p className="checkout-subtitle">Enter your shipping address for express courier delivery.</p>
+                </div>
+              </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Email Address</label>
-                      <input 
-                        type="email" 
-                        name="email" 
-                        value={formData.email} 
-                        onChange={handleInputChange}
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Phone Number (Mobile Money / Contact)</label>
-                      <input 
-                        type="tel" 
-                        name="phone" 
-                        placeholder="e.g. 0540001122" 
-                        value={formData.phone} 
-                        onChange={handleInputChange}
-                        required 
-                      />
-                    </div>
-                  </div>
-
+              <form className="delivery-form" onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+                <div className="form-row">
                   <div className="form-group">
-                    <label>Street Address / Digital Address (Ghana Post GPS)</label>
+                    <label>First Name</label>
                     <input 
                       type="text" 
-                      name="address" 
-                      placeholder="e.g. GA-123-4567, Oxford Street" 
-                      value={formData.address} 
+                      name="firstName" 
+                      value={formData.firstName} 
                       onChange={handleInputChange}
                       required 
                     />
                   </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>City / Town</label>
-                      <input 
-                        type="text" 
-                        name="city" 
-                        placeholder="e.g. Osu, East Legon, Kumasi" 
-                        value={formData.city} 
-                        onChange={handleInputChange}
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Region</label>
-                      <select name="region" value={formData.region} onChange={handleInputChange}>
-                        {ghanaRegions.map(reg => (
-                          <option key={reg} value={reg}>{reg}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="step-actions">
-                    <button type="submit" className="btn-primary" style={{ width: '100%', padding: '0.9rem' }}>
-                      Proceed to Payment & Review
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="step-content">
-                <h3>Review & Payment</h3>
-                
-                {isPlaceholderKey && (
-                  <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#eab308', lineHeight: '1.5' }}>
-                    <strong>Paystack Public Key Required:</strong> To test with live/test Paystack popups, add your Paystack Public Key (starts with <code>pk_test_</code> or <code>pk_live_</code>) to <code>client/.env</code> as <code>VITE_PAYSTACK_PUBLIC_KEY</code>.<br />
-                    <em>For local development without a key, click <strong>Simulate Test Payment</strong> below.</em>
-                  </div>
-                )}
-
-                <div className="review-summary-block">
-                  <div className="review-section">
-                    <h4>Delivery Address</h4>
-                    <p><b>{formData.firstName} {formData.lastName}</b></p>
-                    <p>{formData.address}, {formData.city}</p>
-                    <p>{formData.region} Region, Ghana</p>
-                    <p>Phone: {formData.phone}</p>
-                  </div>
-
-                  <div className="payment-info-box">
-                    <div className="secure-badge">
-                      <ShieldCheck size={20} className="icon-success" />
-                      <span>Secured by Paystack</span>
-                    </div>
-                    <p className="paystack-help-text">
-                      Supports Visa, Mastercard, and Mobile Money (MTN, Telecel, AirtelTigo).
-                    </p>
-                    <div className="payment-network-logos">
-                      <div className="logo-badge">Card</div>
-                      <div className="logo-badge momo-mtn">MTN Momo</div>
-                      <div className="logo-badge momo-telecel">Telecel</div>
-                      <div className="logo-badge momo-airtel">AirtelTigo</div>
-                    </div>
+                  <div className="form-group">
+                    <label>Last Name</label>
+                    <input 
+                      type="text" 
+                      name="lastName" 
+                      value={formData.lastName} 
+                      onChange={handleInputChange}
+                      required 
+                    />
                   </div>
                 </div>
 
-                <div className="step-actions" style={{ flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
-                    <button className="btn-secondary" onClick={prevStep} disabled={isSubmitting}>
-                      <ArrowLeft size={18} /> Back
-                    </button>
-                    
-                    <button 
-                      className="btn-primary add-to-cart-large" 
-                      onClick={handlePaystackPayment} 
-                      disabled={isSubmitting}
-                      style={{ flex: 1, padding: '1rem' }}
-                    >
-                      {isSubmitting ? (
-                        <><Loader2 className="animate-spin" size={18} /> Verifying...</>
-                      ) : (
-                        <>Pay securely with Paystack (GH₵{finalTotal.toFixed(2)})</>
-                      )}
-                    </button>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleInputChange}
+                      required 
+                    />
                   </div>
+                  <div className="form-group">
+                    <label>Phone Number (Mobile Money / Contact)</label>
+                    <input 
+                      type="tel" 
+                      name="phone" 
+                      placeholder="e.g. 0540001122" 
+                      value={formData.phone} 
+                      onChange={handleInputChange}
+                      required 
+                    />
+                  </div>
+                </div>
 
-                  <button 
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSimulatePayment}
-                    disabled={isSubmitting}
-                    style={{ width: '100%', padding: '0.75rem', fontSize: '0.85rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                  >
-                    Simulate Test Payment (Dev Mode)
+                <div className="form-group">
+                  <label>Street Address / Digital Address (Ghana Post GPS)</label>
+                  <input 
+                    type="text" 
+                    name="address" 
+                    placeholder="e.g. GA-123-4567, Oxford Street" 
+                    value={formData.address} 
+                    onChange={handleInputChange}
+                    required 
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>City / Town</label>
+                    <input 
+                      type="text" 
+                      name="city" 
+                      placeholder="e.g. Osu, East Legon, Kumasi" 
+                      value={formData.city} 
+                      onChange={handleInputChange}
+                      required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Region</label>
+                    <select name="region" value={formData.region} onChange={handleInputChange}>
+                      {ghanaRegions.map(reg => (
+                        <option key={reg} value={reg}>{reg}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="step-actions" style={{ marginTop: '1.5rem' }}>
+                  <button type="submit" className="btn-aurum-pay" style={{ width: '100%' }}>
+                    Proceed to Payment & Review <ChevronRight size={18} />
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        </main>
-
-        <aside className="checkout-sidebar">
-          <div className="order-summary-card">
-            <h3>Order Summary</h3>
-            <div className="summary-items">
-              {cartItems.map((item) => (
-                <div key={`${item.id}-${item.size}`} className="summary-item">
-                  <div className="summary-item-img">
-                    <img src={item.image} alt={item.name} />
-                  </div>
-                  <div className="summary-item-info">
-                    <p className="item-name">{item.name}</p>
-                    <p className="item-meta">Size: {item.size} | Qty: {item.quantity}</p>
-                    <p className="item-price">GH₵{(item.price * item.quantity).toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Promo Code Form */}
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
-              <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="Promo Code (e.g. WELCOME10)"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '6px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.85rem',
-                    textTransform: 'uppercase'
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="btn-secondary"
-                  disabled={isValidatingCoupon || !couponInput.trim()}
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                >
-                  {isValidatingCoupon ? '...' : 'Apply'}
-                </button>
               </form>
-              {couponError && <p style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.35rem' }}>{couponError}</p>}
-              {couponSuccess && <p style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '0.35rem' }}>{couponSuccess}</p>}
             </div>
+          )}
 
-            <div className="summary-totals" style={{ marginTop: '1rem' }}>
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>GH₵{cartTotal.toFixed(2)}</span>
+          {step === 2 && (
+            <div className="step-content">
+              {/* Title Section */}
+              <div className="checkout-title-group">
+                <div className="title-icon-wrapper">
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <h1 className="checkout-main-title">Review & <span>secure payment</span></h1>
+                  <p className="checkout-subtitle">One last look before we charge your order.</p>
+                </div>
               </div>
-              {appliedCoupon && (
-                <div className="summary-row" style={{ color: '#16a34a', fontWeight: 600 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Tag size={14} /> Coupon ({appliedCoupon.code})
-                  </span>
-                  <span>-GH₵{appliedCoupon.discountAmount.toFixed(2)}</span>
+
+              {isPlaceholderKey && (
+                <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#eab308', lineHeight: '1.5' }}>
+                  <strong>Paystack Public Key Required:</strong> To test with live/test Paystack popups, add your Paystack Public Key to <code>client/.env</code> as <code>VITE_PAYSTACK_PUBLIC_KEY</code>.<br />
+                  <em>For local development without a key, click <strong>Simulate Test Payment</strong> below.</em>
                 </div>
               )}
-              <div className="summary-row">
-                <span>Delivery ({formData.region})</span>
-                <span>GH₵{deliveryFee.toFixed(2)}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total</span>
-                <span>GH₵{finalTotal.toFixed(2)}</span>
-              </div>
-            </div>
 
-            <div className="summary-guarantee">
-              <Truck size={18} />
-              <p>Express Regional Delivery across Ghana</p>
+              {/* Delivery Address Card */}
+              <div className="delivery-address-card">
+                <div className="delivery-header">
+                  <span className="delivery-label">
+                    <MapPin size={14} color="#a855f7" /> DELIVERY ADDRESS
+                  </span>
+                  <button type="button" className="edit-delivery-btn" onClick={prevStep}>
+                    Edit
+                  </button>
+                </div>
+                <p className="customer-name">{formData.firstName} {formData.lastName}</p>
+                <p className="customer-address-text">{formData.address}, {formData.city}</p>
+                <p className="customer-address-text">{formData.region} Region, Ghana</p>
+                <p className="customer-phone-text">Phone: {formData.phone}</p>
+                
+                <div className="delivery-status-badge">
+                  <Truck size={14} color="#34d399" />
+                  <span>Arrives in 1 - 3 Business Days — free express courier</span>
+                </div>
+              </div>
+
+              {/* Payment Method Selection Grid */}
+              <p className="payment-section-title">PAYMENT METHOD</p>
+              <div className="payment-grid">
+                {/* Card Option */}
+                <div 
+                  className={`payment-option-card ${selectedPaymentMethod === 'card' ? 'selected' : ''}`}
+                  onClick={() => setSelectedPaymentMethod('card')}
+                >
+                  <div className="payment-option-left">
+                    <div className="option-icon-box">
+                      <CreditCard size={20} />
+                    </div>
+                    <div>
+                      <p className="option-title">Card</p>
+                      <p className="option-subtitle">Visa · Mastercard</p>
+                    </div>
+                  </div>
+                  <div className="selection-radio-circle">
+                    {selectedPaymentMethod === 'card' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  </div>
+                </div>
+
+                {/* MTN MoMo Option */}
+                <div 
+                  className={`payment-option-card ${selectedPaymentMethod === 'mtn' ? 'selected' : ''}`}
+                  onClick={() => setSelectedPaymentMethod('mtn')}
+                >
+                  <div className="payment-option-left">
+                    <div className="option-icon-box">
+                      <Smartphone size={20} />
+                    </div>
+                    <div>
+                      <p className="option-title">MTN MoMo</p>
+                      <p className="option-subtitle">Mobile Money</p>
+                    </div>
+                  </div>
+                  <div className="selection-radio-circle">
+                    {selectedPaymentMethod === 'mtn' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  </div>
+                </div>
+
+                {/* Telecel Option */}
+                <div 
+                  className={`payment-option-card ${selectedPaymentMethod === 'telecel' ? 'selected' : ''}`}
+                  onClick={() => setSelectedPaymentMethod('telecel')}
+                >
+                  <div className="payment-option-left">
+                    <div className="option-icon-box">
+                      <Smartphone size={20} />
+                    </div>
+                    <div>
+                      <p className="option-title">Telecel</p>
+                      <p className="option-subtitle">Mobile Money</p>
+                    </div>
+                  </div>
+                  <div className="selection-radio-circle">
+                    {selectedPaymentMethod === 'telecel' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  </div>
+                </div>
+
+                {/* AirtelTigo Option */}
+                <div 
+                  className={`payment-option-card ${selectedPaymentMethod === 'airteltigo' ? 'selected' : ''}`}
+                  onClick={() => setSelectedPaymentMethod('airteltigo')}
+                >
+                  <div className="payment-option-left">
+                    <div className="option-icon-box">
+                      <Smartphone size={20} />
+                    </div>
+                    <div>
+                      <p className="option-title">AirtelTigo</p>
+                      <p className="option-subtitle">Mobile Money</p>
+                    </div>
+                  </div>
+                  <div className="selection-radio-circle">
+                    {selectedPaymentMethod === 'airteltigo' && <CheckCircle size={14} fill="#a855f7" color="#fff" />}
+                  </div>
+                </div>
+              </div>
+
+              {/* Encryption Footnote */}
+              <div className="paystack-security-footnote">
+                <ShieldCheck size={16} />
+                <span>Secured by Paystack. Your details are encrypted end to end.</span>
+              </div>
+
+              {/* Bottom Action Row */}
+              <div className="checkout-actions-row">
+                <button type="button" className="btn-aurum-back" onClick={prevStep} disabled={isSubmitting}>
+                  <ArrowLeft size={16} /> Back to delivery
+                </button>
+
+                <button 
+                  type="button" 
+                  className="btn-aurum-pay" 
+                  onClick={handlePaystackPayment}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <><Loader2 className="animate-spin" size={18} /> Processing...</>
+                  ) : (
+                    <>Pay securely — GH₵{finalTotal.toFixed(2)}</>
+                  )}
+                </button>
+              </div>
+
+              <button 
+                type="button"
+                className="btn-secondary"
+                onClick={handleSimulatePayment}
+                disabled={isSubmitting}
+                style={{ width: '100%', marginTop: '1rem', padding: '0.75rem', fontSize: '0.85rem', borderColor: 'rgba(255,255,255,0.15)', color: '#94a3b8' }}
+              >
+                Simulate Test Payment (Dev Mode)
+              </button>
             </div>
+          )}
+        </main>
+
+        {/* Sidebar Order Summary */}
+        <aside className="checkout-summary-card">
+          <p className="summary-title-header">ORDER SUMMARY</p>
+          
+          {cartItems.map((item) => (
+            <div key={`${item.id}-${item.size}`} className="summary-product-item">
+              <img src={item.image} alt={item.name} className="summary-product-thumb" />
+              <div className="summary-product-details">
+                <p className="summary-product-name">{item.name}</p>
+                <p className="summary-product-meta">{item.color || 'Standard'} · {item.size} · Qty {item.quantity}</p>
+                <p className="summary-product-price">GH₵{(item.price * item.quantity).toFixed(2)}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Fee Breakdown */}
+          <div className="summary-fee-line">
+            <span>Subtotal</span>
+            <span>GH₵{cartTotal.toFixed(2)}</span>
+          </div>
+
+          <div className="summary-fee-line">
+            <span>Express delivery</span>
+            <span style={{ color: deliveryFee === 0 ? '#34d399' : 'inherit' }}>
+              {deliveryFee === 0 ? 'Free' : `GH₵${deliveryFee.toFixed(2)}`}
+            </span>
+          </div>
+
+          {appliedCoupon && (
+            <div className="summary-fee-line" style={{ color: '#34d399' }}>
+              <span>Discount ({appliedCoupon.code})</span>
+              <span>-GH₵{discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          <div className="summary-fee-line total-line">
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>Total due</span>
+            <span className="summary-total-amount">GH₵{finalTotal.toFixed(2)}</span>
+          </div>
+
+          <div className="guarantee-note-box">
+            30-day returns and authentic warranty are included with every Boutique item.
           </div>
         </aside>
       </div>
