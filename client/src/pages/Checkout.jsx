@@ -154,6 +154,12 @@ const Checkout = () => {
 
   const handlePaystackPayment = () => {
     setError('');
+
+    if (isPlaceholderKey) {
+      setError('A valid Paystack Public Key is required for live gateway popups. Please add your key to client/.env as VITE_PAYSTACK_PUBLIC_KEY, or click "Simulate Test Payment (Dev Mode)" below.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     if (!window.PaystackPop || typeof window.PaystackPop.setup !== 'function') {
