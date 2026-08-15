@@ -121,6 +121,37 @@ const Checkout = () => {
     setStep(prev => prev - 1);
   };
 
+  const handleOrderCompletion = async (response) => {
+    try {
+      const orderResponse = await orderService.createOrder({
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color
+        })),
+        totalAmount: finalTotal,
+        shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+        region: formData.region,
+        city: formData.city,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        paymentReference: response.reference,
+        paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
+      });
+
+      setCreatedOrderId(orderResponse.orderId);
+      setIsOrderPlaced(true);
+      setCartItems([]);
+    } catch (err) {
+      console.error('Order Submission Error:', err);
+      setError(err.message || 'Payment verified, but saving your order to database failed. Please contact support.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePaystackPayment = () => {
     setError('');
     setIsSubmitting(true);
@@ -140,7 +171,7 @@ const Checkout = () => {
         currency: 'GHS', // Set to GHS to support cards & Mobile Money (MTN, Telecel, AirtelTigo)
         ref: 'BTQ-' + Math.floor(Math.random() * 1000000000 + 1),
         metadata: {
-          userId: user.id,
+          userId: user?.id || null,
           couponCode: appliedCoupon ? appliedCoupon.code : null,
           discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0,
           shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
@@ -153,39 +184,15 @@ const Checkout = () => {
             color: item.color
           }))
         },
-        onClose: () => {
+        onClose: function() {
           setIsSubmitting(false);
           setError('Payment cancelled by user.');
         },
-        callback: async (response) => {
-          try {
-            const orderResponse = await orderService.createOrder({
-              items: cartItems.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                size: item.size,
-                color: item.color
-              })),
-              totalAmount: finalTotal,
-              shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
-              region: formData.region,
-              city: formData.city,
-              couponCode: appliedCoupon ? appliedCoupon.code : null,
-              paymentReference: response.reference,
-              paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
-            });
-
-            setCreatedOrderId(orderResponse.orderId);
-            setIsOrderPlaced(true);
-            setCartItems([]);
-          } catch (err) {
-            console.error('Order Submission Error:', err);
-            setError(err.message || 'Payment verified, but saving your order to database failed. Please contact support.');
-          } finally {
-            setIsSubmitting(false);
-          }
+        callback: function(response) {
+          handleOrderCompletion(response);
+        },
+        onSuccess: function(response) {
+          handleOrderCompletion(response);
         }
       });
 
