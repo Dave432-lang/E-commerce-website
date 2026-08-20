@@ -14,7 +14,9 @@ const ProductGrid = ({ title, products }) => {
       
       <div className="product-grid">
         {products.map((product) => {
-          const isOutOfStock = Number(product.stock_quantity ?? 50) <= 0;
+          const stockQty = Number(product.stock_quantity ?? 50);
+          const isOutOfStock = stockQty <= 0;
+          const isLowStock = !isOutOfStock && stockQty <= 10;
           const regularPrice = Number(product.price);
           const salePrice = product.sale_price !== null && product.sale_price !== undefined ? Number(product.sale_price) : null;
           const isOnSale = salePrice !== null && salePrice > 0 && salePrice < regularPrice;
@@ -29,6 +31,11 @@ const ProductGrid = ({ title, products }) => {
                   {isOutOfStock && (
                     <span style={{ background: '#ef4444', color: '#ffffff', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
                       Out of Stock
+                    </span>
+                  )}
+                  {isLowStock && (
+                    <span style={{ background: '#f59e0b', color: '#ffffff', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                      Only {stockQty} Left!
                     </span>
                   )}
                   {!isOutOfStock && isOnSale && (

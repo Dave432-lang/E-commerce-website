@@ -201,14 +201,19 @@ export const updateOrderStatus = async (req, res) => {
 export const addProduct = async (req, res) => {
   const { name, description, price, salePrice, gender, category, imageUrl, sizes, colors, stockQuantity, isFeatured, isNewArrival } = req.body;
 
-  if (!name || !price || !category || !imageUrl) {
+  if (!name || price === undefined || price === null || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
   }
 
   try {
-    const sizesJson = sizes ? JSON.stringify(sizes) : '[]';
-    const colorsJson = colors ? JSON.stringify(colors) : '[]';
-    const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
+    const sizesJson = Array.isArray(sizes) 
+      ? JSON.stringify(sizes) 
+      : (typeof sizes === 'string' && sizes.startsWith('[') ? sizes : JSON.stringify(sizes ? [sizes] : []));
+    const colorsJson = Array.isArray(colors) 
+      ? JSON.stringify(colors) 
+      : (typeof colors === 'string' && colors.startsWith('[') ? colors : JSON.stringify(colors ? [colors] : []));
+    
+    const stock = stockQuantity !== undefined ? Math.max(0, Number(stockQuantity)) : 50;
     const sale = salePrice !== undefined && salePrice !== null && salePrice !== '' ? Number(salePrice) : null;
     const prodGender = gender ? gender.toLowerCase() : 'unisex';
     const featured = isFeatured ? 1 : 0;
@@ -217,22 +222,25 @@ export const addProduct = async (req, res) => {
     const result = await query(
       `INSERT INTO products (name, description, price, sale_price, gender, category, image_url, sizes, colors, stock_quantity, is_featured, is_new_arrival)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, description || '', Number(price), sale, prodGender, category, imageUrl, sizesJson, colorsJson, stock, featured, newArrival]
+      [name.trim(), description ? description.trim() : '', Number(price), sale, prodGender, category.trim(), imageUrl.trim(), sizesJson, colorsJson, stock, featured, newArrival]
     );
 
     res.status(201).json({
       message: 'Product successfully added',
       id: result.insertId,
-      name,
+      name: name.trim(),
       price: Number(price),
       sale_price: sale,
       gender: prodGender,
-      category,
+      category: category.trim(),
+      image: imageUrl.trim(),
+      sizes: Array.isArray(sizes) ? sizes : [],
+      colors: Array.isArray(colors) ? colors : [],
       stockQuantity: stock
     });
   } catch (error) {
     console.error('Add Product Error:', error);
-    res.status(500).json({ message: 'Server Error adding product to catalogue' });
+    res.status(500).json({ message: error.message || 'Server Error adding product to catalogue' });
   }
 };
 
@@ -243,14 +251,19 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, description, price, salePrice, gender, category, imageUrl, sizes, colors, stockQuantity, isArchived, isFeatured, isNewArrival } = req.body;
 
-  if (!name || !price || !category || !imageUrl) {
+  if (!name || price === undefined || price === null || !category || !imageUrl) {
     return res.status(400).json({ message: 'Name, price, category, and image URL are required' });
   }
 
   try {
-    const sizesJson = sizes ? JSON.stringify(sizes) : '[]';
-    const colorsJson = colors ? JSON.stringify(colors) : '[]';
-    const stock = stockQuantity !== undefined ? Number(stockQuantity) : 50;
+    const sizesJson = Array.isArray(sizes) 
+      ? JSON.stringify(sizes) 
+      : (typeof sizes === 'string' && sizes.startsWith('[') ? sizes : JSON.stringify(sizes ? [sizes] : []));
+    const colorsJson = Array.isArray(colors) 
+      ? JSON.stringify(colors) 
+      : (typeof colors === 'string' && colors.startsWith('[') ? colors : JSON.stringify(colors ? [colors] : []));
+    
+    const stock = stockQuantity !== undefined ? Math.max(0, Number(stockQuantity)) : 50;
     const archived = isArchived !== undefined ? (isArchived ? 1 : 0) : 0;
     const sale = salePrice !== undefined && salePrice !== null && salePrice !== '' ? Number(salePrice) : null;
     const prodGender = gender ? gender.toLowerCase() : 'unisex';
@@ -261,7 +274,7 @@ export const updateProduct = async (req, res) => {
       `UPDATE products 
        SET name = ?, description = ?, price = ?, sale_price = ?, gender = ?, category = ?, image_url = ?, sizes = ?, colors = ?, stock_quantity = ?, is_archived = ?, is_featured = ?, is_new_arrival = ? 
        WHERE id = ?`,
-      [name, description || '', Number(price), sale, prodGender, category, imageUrl, sizesJson, colorsJson, stock, archived, featured, newArrival, id]
+      [name.trim(), description ? description.trim() : '', Number(price), sale, prodGender, category.trim(), imageUrl.trim(), sizesJson, colorsJson, stock, archived, featured, newArrival, id]
     );
 
     if (result.affectedRows === 0) {
@@ -271,7 +284,7 @@ export const updateProduct = async (req, res) => {
     res.json({ message: 'Product updated successfully', id });
   } catch (error) {
     console.error('Update Product Error:', error);
-    res.status(500).json({ message: 'Server Error updating product' });
+    res.status(500).json({ message: error.message || 'Server Error updating product' });
   }
 };
 

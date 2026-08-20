@@ -195,12 +195,23 @@ export const createOrder = async (req, res) => {
       await conn.commit();
       conn.release();
 
-      // Send Order Confirmation Email
+      // Send Order Confirmation Email to Customer
       emailService.sendOrderConfirmationEmail(req.user.email, req.user.name, {
         id: orderId,
         total_price: calculatedTotal,
         items: verifiedItems,
-        shipping_address: shippingAddress,
+        shipping_address: fullShippingAddress || cleanAddress,
+        payment_method: paymentMethod || 'Paystack (Card/Momo)'
+      });
+
+      // Send Order Notification Email to Admin
+      emailService.sendAdminOrderNotificationEmail({
+        id: orderId,
+        customer_name: req.user.name,
+        customer_email: req.user.email,
+        total_price: calculatedTotal,
+        items: verifiedItems,
+        shipping_address: fullShippingAddress || cleanAddress,
         payment_method: paymentMethod || 'Paystack (Card/Momo)'
       });
 
@@ -279,3 +290,79 @@ export const getMyOrders = async (req, res) => {
     res.status(500).json({ message: 'Server Error fetching orders' });
   }
 };
+
+// @desc    Track order status by order ID (Public endpoint)
+// @route   GET /api/orders/track/:orderId
+// @access  Public
+export const trackOrder = async (req, res) => {
+  try {
+    const rawId = req.params.orderId;
+    if (!rawId) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+
+    const numericId = parseInt(String(rawId).replace(/^BTQ-/i, ''), 10);
+    if (isNaN(numericId) || numericId <= 0) {
+      return res.status(400).json({ message: 'Invalid Order ID format. Expected format: BTQ-123 or 123' });
+    }
+
+    const orderRows = await query(
+      `SELECT o.*, u.email as customer_email, u.name as customer_name 
+       FROM orders o 
+       LEFT JOIN users u ON o.user_id = u.id 
+       WHERE o.id = ?`,
+      [numericId]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ message: `Order #${rawId} not found` });
+    }
+
+    const order = orderRows[0];
+
+    const items = await query(
+      `SELECT oi.*, p.name, p.image_url 
+       FROM order_items oi 
+       JOIN products p ON oi.product_id = p.id 
+       WHERE oi.order_id = ?`,
+      [order.id]
+    );
+
+    const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+    const currentStatus = order.status || 'Processing';
+    const statusIndex = statuses.findIndex(s => s.toLowerCase() === currentStatus.toLowerCase());
+
+    const timeline = statuses.map((statusName, idx) => ({
+      status: statusName,
+      isCompleted: idx <= statusIndex && currentStatus.toLowerCase() !== 'cancelled',
+      isCurrent: statusName.toLowerCase() === currentStatus.toLowerCase()
+    }));
+
+    res.json({
+      orderId: `BTQ-${order.id}`,
+      rawId: order.id,
+      date: new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      status: currentStatus,
+      isCancelled: currentStatus.toLowerCase() === 'cancelled',
+      timeline,
+      total: Number(order.total_amount),
+      shippingAddress: order.shipping_address,
+      paymentMethod: order.payment_method,
+      customerName: order.customer_name || 'Customer',
+      customerEmail: order.customer_email ? order.customer_email.replace(/(.{2})(.*)(?=@)/, '$1***') : 'N/A',
+      items: items.map(item => ({
+        id: item.product_id,
+        name: item.name,
+        image: item.image_url,
+        quantity: item.quantity,
+        size: item.selected_size,
+        color: item.selected_color,
+        price: Number(item.price_at_time)
+      }))
+    });
+  } catch (error) {
+    console.error('Track Order Error:', error);
+    res.status(500).json({ message: 'Server Error tracking order' });
+  }
+};
+

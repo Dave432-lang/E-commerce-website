@@ -17,5 +17,11 @@ export const orderService = {
   // Fetch active regional delivery fees
   getDeliveryFees: async () => {
     return await apiRequest('/delivery/fees');
+  },
+
+  // Track order by Order ID (Public)
+  trackOrder: async (orderId) => {
+    return await apiRequest(`/orders/track/${encodeURIComponent(orderId)}`);
   }
 };
+

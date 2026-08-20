@@ -236,11 +236,18 @@ const ProductDetails = () => {
             )}
 
             <div className="quantity-selector">
-              <h4>Quantity</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <h4 style={{ margin: 0 }}>Quantity</h4>
+                {stockCount > 0 && stockCount <= 10 && (
+                  <span style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 600 }}>
+                    Max {stockCount} allowed
+                  </span>
+                )}
+              </div>
               <div className="quantity-controls">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={isOutOfStock}>-</button>
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={isOutOfStock || quantity <= 1}>-</button>
                 <span>{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} disabled={isOutOfStock}>+</button>
+                <button onClick={() => setQuantity(Math.min(stockCount, quantity + 1))} disabled={isOutOfStock || quantity >= stockCount}>+</button>
               </div>
             </div>
           </div>

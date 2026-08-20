@@ -187,7 +187,89 @@ export const emailService = {
       console.log(`[DEV MODE] ORDER CONFIRMATION EMAIL DISPATCH SIMULATION`);
       console.log(`TO: ${toEmail}`);
       console.log(`ORDER ID: #${order.id}`);
-      console.log(`TOTAL: $${Number(order.total_price || order.totalAmount).toFixed(2)}`);
+      console.log(`TOTAL: GH₵${Number(order.total_price || order.totalAmount).toFixed(2)}`);
+      console.log('======================================================\n');
+    }
+  },
+
+  /**
+   * Send Admin Notification Email for New Orders
+   */
+  sendAdminOrderNotificationEmail: async (order) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@boutique.com';
+    const subject = `[NEW ORDER] Order #${order.id} Placed - GH₵${Number(order.total_price || order.totalAmount).toFixed(2)}`;
+
+    const itemsHtml = (order.items || []).map(item => `
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+          <strong>${item.name || item.product_name}</strong> (${item.size || 'M'}, ${item.color || 'Default'})
+        </td>
+        <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">GH₵${(Number(item.price) * item.quantity).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #111827; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 24px; }
+          .header { border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🚨 New Order Received! (Order #${order.id})</h2>
+          </div>
+          <p>A new customer order has been placed and verified.</p>
+          <p><strong>Customer Name:</strong> ${order.customer_name || 'Customer'}</p>
+          <p><strong>Customer Email:</strong> ${order.customer_email || 'N/A'}</p>
+          <p><strong>Shipping Address:</strong> ${order.shipping_address}</p>
+          <p><strong>Payment Method:</strong> ${order.payment_method}</p>
+
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+            <thead>
+              <tr style="text-align: left; font-size: 13px; color: #6b7280;">
+                <th>ITEM</th>
+                <th style="text-align: center;">QTY</th>
+                <th style="text-align: right;">PRICE</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+              <tr style="font-weight: bold; font-size: 16px;">
+                <td colspan="2" style="padding-top: 12px;">Total Paid:</td>
+                <td style="padding-top: 12px; text-align: right;">GH₵${Number(order.total_price || order.totalAmount).toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: FROM_EMAIL,
+          to: adminEmail,
+          subject,
+          html: htmlContent,
+        });
+        console.log(`[Email Service] Admin notification sent to ${adminEmail} for Order #${order.id}`);
+      } catch (err) {
+        console.error(`[Email Service Error] Failed to send admin notification email:`, err);
+      }
+    } else {
+      console.log('\n======================================================');
+      console.log(`[DEV MODE] ADMIN ORDER NOTIFICATION DISPATCH SIMULATION`);
+      console.log(`TO ADMIN: ${adminEmail}`);
+      console.log(`ORDER ID: #${order.id}`);
+      console.log(`TOTAL: GH₵${Number(order.total_price || order.totalAmount).toFixed(2)}`);
       console.log('======================================================\n');
     }
   }

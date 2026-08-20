@@ -114,6 +114,13 @@ const runMigrations = async () => {
       console.log('Successfully completed products table migration (added is_new_arrival column).');
     }
 
+    // Modify image_url column to LONGTEXT to support high-res uploaded base64 data URLs
+    try {
+      await query("ALTER TABLE products MODIFY COLUMN image_url LONGTEXT NOT NULL");
+    } catch (e) {
+      // Column modification handled
+    }
+
     // Add indexes on products table for fast filtering
     const createIndexSafe = async (indexName, sql) => {
       try {

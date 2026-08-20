@@ -275,13 +275,22 @@ const Profile = () => {
                             {order.shippingAddress && <p style={{ margin: 0, fontSize: '0.85rem' }}><MapPin size={14} /> {order.shippingAddress}</p>}
                             {order.paymentMethod && <p style={{ margin: 0, fontSize: '0.85rem' }}><ChevronRight size={14} /> Paid via {order.paymentMethod}</p>}
                           </div>
-                          <button
-                            className="btn-secondary btn-small"
-                            onClick={() => handlePrintInvoice(order)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
-                          >
-                            <Download size={14} /> Invoice PDF
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <Link
+                              to={`/track-order?id=${order.id}`}
+                              className="btn-primary btn-small"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '6px 12px', fontSize: '0.8rem', textDecoration: 'none' }}
+                            >
+                              <Package size={14} /> Track Order
+                            </Link>
+                            <button
+                              className="btn-secondary btn-small"
+                              onClick={() => handlePrintInvoice(order)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
+                            >
+                              <Download size={14} /> Invoice PDF
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -294,7 +303,41 @@ const Profile = () => {
           {/* Wishlist Tab */}
           {activeTab === 'wishlist' && (
             <div className="wishlist-section">
-              <h2>My Wishlist</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h2 style={{ margin: 0 }}>My Wishlist ({wishlist.length})</h2>
+                {wishlist.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      className="btn-primary btn-small"
+                      onClick={() => {
+                        wishlist.forEach(item => {
+                          addToCart(item, 1, item.sizes?.[0] || 'M', item.colors?.[0] || 'Default');
+                        });
+                        showToast(`Moved ${wishlist.length} item(s) to cart!`);
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      <ShoppingBag size={14} /> Move All to Cart
+                    </button>
+                    <button
+                      className="btn-secondary btn-small"
+                      onClick={async () => {
+                        try {
+                          await Promise.all(wishlist.map(item => wishlistService.removeFromWishlist(item.id)));
+                          setWishlist([]);
+                          showToast('Wishlist cleared.');
+                        } catch (err) {
+                          console.error('Error clearing wishlist:', err);
+                        }
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)' }}
+                    >
+                      <Trash2 size={14} /> Clear All
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {wishlist.length === 0 ? (
                 <div className="empty-orders">
                   <Heart size={48} />
@@ -316,7 +359,7 @@ const Profile = () => {
                       </div>
                       <div className="wishlist-item-info">
                         <h3>{item.name}</h3>
-                        <p className="wishlist-price">GH₵{item.price.toFixed(2)}</p>
+                        <p className="wishlist-price">GH₵{Number(item.price).toFixed(2)}</p>
                         <button
                           className="btn-primary btn-small"
                           onClick={() => handleAddWishlistItemToCart(item)}

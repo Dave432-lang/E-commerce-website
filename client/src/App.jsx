@@ -16,6 +16,7 @@ import Contact from './pages/Contact'
 import Cart from './pages/Cart'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import TrackOrder from './pages/TrackOrder'
 import AdminRoute from './components/AdminRoute'
 import AdminLayout from './components/AdminLayout'
 import Dashboard from './pages/Admin/Dashboard'
@@ -50,11 +51,13 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+
           
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>

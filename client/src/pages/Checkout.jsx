@@ -15,7 +15,9 @@ import {
   Truck,
   ShieldCheck,
   Loader2,
-  Tag
+  Tag,
+  Printer,
+  FileText
 } from 'lucide-react';
 import { VisaLogo, MastercardLogo, MtnBadge, MtnMomoLogo, TelecelLogo, TigoLogo } from '../components/PaymentLogos';
 
@@ -27,6 +29,8 @@ const Checkout = () => {
   const [step, setStep] = useState(1);
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
+  const [placedOrderSummary, setPlacedOrderSummary] = useState(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -144,6 +148,22 @@ const Checkout = () => {
         paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Momo'
       });
 
+      const orderSummaryData = {
+        orderId: orderResponse.orderId,
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        items: [...cartItems],
+        subtotal: cartTotal,
+        deliveryFee: deliveryFee,
+        discountAmount: discountAmount,
+        total: finalTotal,
+        customerName: `${formData.firstName} ${formData.lastName}`.trim() || user?.name || 'Customer',
+        email: formData.email,
+        phone: formData.phone,
+        shippingAddress: `${formData.address}, ${formData.city}, ${formData.region}, Ghana`,
+        paymentMethod: response.channel === 'card' ? 'Paystack Card' : 'Paystack Mobile Money'
+      };
+
+      setPlacedOrderSummary(orderSummaryData);
       setCreatedOrderId(orderResponse.orderId);
       setIsOrderPlaced(true);
       setCartItems([]);
@@ -309,7 +329,7 @@ const Checkout = () => {
           <h2>Order Confirmed!</h2>
           <p className="order-number">Order ID: <span>#{createdOrderId}</span></p>
           <p className="success-message">
-            Thank you for shopping with us! We have received your payment and your order is currently being processed for delivery to <strong>{formData.city}, {formData.region} Region</strong>.
+            Thank you for shopping with us! An order confirmation receipt email has been sent to <strong>{formData.email}</strong> and your order is currently being prepared for delivery to <strong>{formData.city}, {formData.region} Region</strong>.
           </p>
 
           <div className="order-next-steps">
@@ -322,8 +342,16 @@ const Checkout = () => {
             </div>
           </div>
 
-          <div className="success-actions">
-            <Link to="/shop" className="btn-primary">
+          <div className="success-actions" style={{ flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
+            <button 
+              type="button" 
+              className="btn-primary" 
+              onClick={() => setShowInvoiceModal(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Printer size={18} /> Print / Download Invoice
+            </button>
+            <Link to="/shop" className="btn-secondary">
               Continue Shopping
             </Link>
             <Link to="/profile" className="btn-secondary">
@@ -331,6 +359,103 @@ const Checkout = () => {
             </Link>
           </div>
         </div>
+
+        {/* Modal Printable Invoice Overlay */}
+        {showInvoiceModal && placedOrderSummary && (
+          <div className="invoice-modal-overlay">
+            <div className="invoice-modal-container">
+              <div className="invoice-actions-bar no-print">
+                <button type="button" className="btn-primary" onClick={() => window.print()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1.2rem', borderRadius: '50px' }}>
+                  <Printer size={16} /> Print / Save as PDF
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setShowInvoiceModal(false)} style={{ padding: '0.55rem 1.2rem', borderRadius: '50px' }}>
+                  Close Invoice
+                </button>
+              </div>
+
+              <div className="invoice-paper" id="printable-invoice">
+                <div className="invoice-header">
+                  <div>
+                    <h1 className="invoice-brand">BOUTIQUE</h1>
+                    <p className="invoice-subbrand">Ghanaian Luxury & Modern Apparel</p>
+                  </div>
+                  <div className="invoice-meta-right">
+                    <h2 className="invoice-title">OFFICIAL INVOICE RECEIPT</h2>
+                    <p><strong>Invoice #:</strong> {placedOrderSummary.orderId}</p>
+                    <p><strong>Date:</strong> {placedOrderSummary.date}</p>
+                    <p><strong>Status:</strong> <span className="badge-paid">✓ CONFIRMED & PAID</span></p>
+                  </div>
+                </div>
+
+                <div className="invoice-divider" />
+
+                <div className="invoice-addresses-grid">
+                  <div>
+                    <h4 className="invoice-section-title">Billed To:</h4>
+                    <p><strong>{placedOrderSummary.customerName}</strong></p>
+                    <p>{placedOrderSummary.email}</p>
+                    <p>{placedOrderSummary.phone}</p>
+                  </div>
+                  <div>
+                    <h4 className="invoice-section-title">Shipping Address:</h4>
+                    <p>{placedOrderSummary.shippingAddress}</p>
+                    <p><strong>Payment Method:</strong> {placedOrderSummary.paymentMethod}</p>
+                  </div>
+                </div>
+
+                <table className="invoice-table">
+                  <thead>
+                    <tr>
+                      <th>Item Description</th>
+                      <th>Options</th>
+                      <th style={{ textAlign: 'center' }}>Qty</th>
+                      <th style={{ textAlign: 'right' }}>Unit Price</th>
+                      <th style={{ textAlign: 'right' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {placedOrderSummary.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td><strong>{item.name}</strong></td>
+                        <td>{item.color || 'Standard'} / {item.size}</td>
+                        <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                        <td style={{ textAlign: 'right' }}>GH₵{Number(item.price).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right' }}>GH₵{(Number(item.price) * item.quantity).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="invoice-summary-section">
+                  <div className="invoice-totals-box">
+                    <div className="invoice-row">
+                      <span>Subtotal:</span>
+                      <span>GH₵{placedOrderSummary.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="invoice-row">
+                      <span>Express Regional Shipping:</span>
+                      <span>GH₵{placedOrderSummary.deliveryFee.toFixed(2)}</span>
+                    </div>
+                    {placedOrderSummary.discountAmount > 0 && (
+                      <div className="invoice-row discount">
+                        <span>Discount:</span>
+                        <span>-GH₵{placedOrderSummary.discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="invoice-row total-paid">
+                      <span>Total Amount Paid:</span>
+                      <span>GH₵{placedOrderSummary.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="invoice-footer-note">
+                  <p>Thank you for your purchase with Boutique! For any inquiries regarding your order, please contact <strong>support@boutique.com</strong> or WhatsApp our customer help desk.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

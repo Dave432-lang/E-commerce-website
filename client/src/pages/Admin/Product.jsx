@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, AlertCircle, Archive, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Edit2, Trash2, X, AlertCircle, Archive, RotateCcw, Upload, Image as ImageIcon } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import Loader from '../../components/Loader/Loader';
 
@@ -7,11 +7,65 @@ const Product = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [modalError, setModalError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setModalError('Please select a valid image file (JPG, PNG, WEBP, etc.).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDimension = 900;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
+        setModalError('');
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Sample luxury fashion image presets for easy populating
+  const sampleImages = [
+    { label: 'Jacket/Coat', url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80' },
+    { label: 'Dress', url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80' },
+    { label: 'Handbag', url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80' },
+    { label: 'Shoes', url: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80' }
+  ];
   
   // Form state
   const [formData, setFormData] = useState({
@@ -110,6 +164,27 @@ const Product = () => {
     e.preventDefault();
     setModalError('');
 
+    if (!formData.name || !formData.name.trim()) {
+      setModalError('Please enter a valid Product Name.');
+      return;
+    }
+
+    const priceNum = Number(formData.price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setModalError('Please enter a valid Regular Price greater than GH₵0.');
+      return;
+    }
+
+    if (!formData.category || !formData.category.trim()) {
+      setModalError('Please enter a Product Category.');
+      return;
+    }
+
+    if (!formData.imageUrl || !formData.imageUrl.trim()) {
+      setModalError('Please enter or select an Image URL.');
+      return;
+    }
+
     // Process colors from comma separated input
     const colors = colorInput
       .split(',')
@@ -118,17 +193,16 @@ const Product = () => {
 
     const productData = {
       ...formData,
-      price: Number(formData.price),
-      salePrice: formData.salePrice !== '' ? Number(formData.salePrice) : null,
-      stockQuantity: Number(formData.stockQuantity),
+      name: formData.name.trim(),
+      category: formData.category.trim(),
+      imageUrl: formData.imageUrl.trim(),
+      price: priceNum,
+      salePrice: formData.salePrice !== '' && formData.salePrice !== null ? Number(formData.salePrice) : null,
+      stockQuantity: Math.max(0, Number(formData.stockQuantity) || 0),
       colors
     };
 
-    if (!productData.name || !productData.price || !productData.category || !productData.imageUrl) {
-      setModalError('Please fill in Name, Price, Category, and Image URL.');
-      return;
-    }
-
+    setSubmitting(true);
     try {
       if (editingProduct) {
         await adminService.updateProduct(editingProduct.id, productData);
@@ -139,7 +213,9 @@ const Product = () => {
       fetchProducts();
     } catch (err) {
       console.error('Failed to save product:', err);
-      setModalError(err.message || 'Error occurred while saving product.');
+      setModalError(err.message || 'Error occurred while saving product. Please check your credentials or backend server status.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -395,14 +471,85 @@ const Product = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Image URL <span className="text-danger">*</span></label>
+                  <label>Product Image <span className="text-danger">*</span></label>
+                  
+                  {/* Hidden File Input */}
                   <input 
-                    name="imageUrl" 
-                    value={formData.imageUrl} 
-                    onChange={handleInputChange} 
-                    placeholder="https://images.unsplash.com/..." 
-                    required 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*" 
+                    onChange={handleImageFileUpload} 
+                    style={{ display: 'none' }} 
                   />
+
+                  {/* Direct File Upload Button */}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', background: 'rgba(255, 255, 255, 0.06)' }}
+                    >
+                      <Upload size={18} />
+                      Choose Image File from Computer
+                    </button>
+                  </div>
+
+                  {/* External URL Input Fallback */}
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      name="imageUrl" 
+                      value={formData.imageUrl} 
+                      onChange={handleInputChange} 
+                      placeholder="Or paste an Image URL (https://...)" 
+                      required 
+                    />
+                  </div>
+
+                  {/* Preset Sample Images */}
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Presets:</span>
+                    {sampleImages.map((sample, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="btn-secondary btn-small"
+                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: sample.url }))}
+                        style={{ padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px' }}
+                      >
+                        + {sample.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Live Image Preview Box */}
+                  {formData.imageUrl && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.04)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <img 
+                          src={formData.imageUrl} 
+                          alt="Product Preview" 
+                          style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)' }}
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>
+                            {formData.imageUrl.startsWith('data:image/') ? 'Uploaded Image Selected' : 'Image URL Selected'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ready to save into catalogue</div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                        style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.3)' }}
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -443,11 +590,11 @@ const Product = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>
+                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)} disabled={submitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingProduct ? 'Save Changes' : 'Create Product'}
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving Product...' : editingProduct ? 'Save Changes' : 'Create Product'}
                 </button>
               </div>
             </form>
